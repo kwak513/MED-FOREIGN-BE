@@ -20,6 +20,7 @@ public class HospitalController {
 	// 메인 리스트 페이지에서 사용할 강남구와 강동구 병원 정보 가져오기(id, 병원명, 시·구 주소, 가능 언어, 대표과 1개)
 	@GetMapping("/select15FromGangnamGangDongHospital")
 	public List<Map<String, Object>> select15FromGangnamGangDongHospital(@RequestParam int offsetNum){
+System.out.println("offsetNum: " + offsetNum);
 		return hospitalService.select15FromGangnamGangDongHospital(offsetNum);
 	}
 	
@@ -81,6 +82,11 @@ public class HospitalController {
 	]
 	 */
 	
+	// 병원명 검색하기
+	@GetMapping("/selectByHospitalName")
+	public List<Map<String, Object>> selectByHospitalName(@RequestParam String hospitalName, @RequestParam int offsetNum){
+		return hospitalService.selectByHospitalName(hospitalName, offsetNum);
+	}
 	
 
 //	@PostMapping("/insertIntoChartInfo")

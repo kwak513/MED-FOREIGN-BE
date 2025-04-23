@@ -25,6 +25,7 @@ public class HospitalService {
 		
 		try {
 			String sql = 
+					
 						"(SELECT gangdong_name AS hospital_name, "
 						+ "gangdong_languages AS hospital_languages, "
 						+ "gangdong_main_address AS hospital_main_address, "
@@ -32,6 +33,7 @@ public class HospitalService {
 						+ "'gangdong' AS source, "
 						+ "id AS hospital_id "
 						+ "FROM gangdong_hospital "
+						+ "ORDER BY hospital_id ASC "
 						+ "LIMIT 15 OFFSET :OFFSET) "
 						+ "UNION "
 						+ "(SELECT gangnam_name AS hospital_name, "
@@ -41,7 +43,29 @@ public class HospitalService {
 						+ "'gangnam' AS source, "
 						+ "id AS hospital_id "
 						+ "FROM gangnam_hospital "
+						+ "ORDER BY hospital_id ASC "
 						+ "LIMIT 15 OFFSET :OFFSET);"
+						
+//						 강남구 데이터 먼저 
+//						"(SELECT gangnam_name AS hospital_name, "
+//						+ "gangnam_languages AS hospital_languages, "
+//						+ "gangnam_main_address AS hospital_main_address, "
+//						+ "SUBSTRING_INDEX(gangnam_category, ',', 1) AS hospital_main_category, "
+//						+ "'gangnam' AS source, "
+//						+ "id AS hospital_id "
+//						+ "FROM gangnam_hospital "
+//						+ "ORDER BY hospital_id ASC "
+//						+ "LIMIT 15 OFFSET :OFFSET) "
+//						+ "UNION "
+//						+"(SELECT gangdong_name AS hospital_name, "
+//						+ "gangdong_languages AS hospital_languages, "
+//						+ "gangdong_main_address AS hospital_main_address, "
+//						+ "SUBSTRING_INDEX(gangdong_category, ',', 1) AS hospital_main_category, "
+//						+ "'gangdong' AS source, "
+//						+ "id AS hospital_id "
+//						+ "FROM gangdong_hospital "
+//						+ "ORDER BY hospital_id ASC "
+//						+ "LIMIT 15 OFFSET :OFFSET);"
 					;
 			Query query = em.createNativeQuery(sql, Tuple.class);
 			query.setParameter("OFFSET", offsetNum);
@@ -106,6 +130,51 @@ public class HospitalService {
 			
 		} catch(Exception e) {
 			System.out.println("selectFromGangdongHospital failed: "+ e.getMessage());
+			return new ArrayList<>();
+		}
+	}
+
+	// 병원명 검색하기
+	public List<Map<String, Object>> selectByHospitalName(String hospitalName, int offsetNum){
+		
+		try {
+			String sql = "(SELECT gangdong_name AS hospital_name, "
+						+ "gangdong_languages AS hospital_languages, "
+						+ "gangdong_main_address AS hospital_main_address, "
+						+ "SUBSTRING_INDEX(gangdong_category, ',', 1) AS hospital_main_category, "
+						+ "'gangdong' AS source, "
+						+ "id AS hospital_id "
+						+"FROM gangdong_hospital "
+						+"WHERE gangdong_name LIKE CONCAT('%', :hospital_name, '%') "
+						+ "ORDER BY id ASC "
+						+ "LIMIT 15 OFFSET :OFFSET) "
+						+ "UNION "
+						+"(SELECT gangnam_name AS hospital_name, "
+						+ "gangnam_languages AS hospital_languages, "
+						+ "gangnam_main_address AS hospital_main_address, "
+						+ "SUBSTRING_INDEX(gangnam_category, ',', 1) AS hospital_main_category, "
+						+ "'gangnam' AS source, "
+						+ "id AS hospital_id "
+						+"FROM gangnam_hospital "
+						+"WHERE gangnam_name LIKE CONCAT('%', :hospital_name, '%') "
+						+ "ORDER BY id ASC "
+						+ "LIMIT 15 OFFSET :OFFSET) "
+						;
+					
+			
+			
+			
+			Query query = em.createNativeQuery(sql, Tuple.class);
+			query.setParameter("hospital_name", hospitalName);
+			query.setParameter("OFFSET", offsetNum);
+		
+			List<Tuple> rs = query.getResultList();
+			
+			List<Map<String, Object>> rsToMap = JPAUtil.convertTupleToMap(rs);
+			return rsToMap;
+			
+		} catch(Exception e) {
+			System.out.println("selectByHospitalName failed: "+ e.getMessage());
 			return new ArrayList<>();
 		}
 	}
