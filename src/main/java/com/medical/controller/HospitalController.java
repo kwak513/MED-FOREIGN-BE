@@ -82,13 +82,25 @@ System.out.println("offsetNum: " + offsetNum);
 	]
 	 */
 	
-	// 병원명 검색하기
-	@GetMapping("/selectByHospitalName")
-	public List<Map<String, Object>> selectByHospitalName(@RequestParam String hospitalName, @RequestParam int offsetNum){
-		return hospitalService.selectByHospitalName(hospitalName, offsetNum);
+//	// 병원명 검색하기
+//	@GetMapping("/selectByHospitalName")
+//	public List<Map<String, Object>> selectByHospitalName(@RequestParam String hospitalName, @RequestParam int offsetNum){
+//		return hospitalService.selectByHospitalName(hospitalName, offsetNum);
+//	}
+//	
+//	// 필터링 기능(사용 언어, 진료과목, 지역)
+//	@GetMapping("/filterHospitalByLangDepartLocation")
+//	public List<Map<String, Object>> filterHospitalByLangDepartLocation(@RequestParam(required = false) String language, @RequestParam(required = false) String department, @RequestParam(required = false) String location, @RequestParam int offsetNum){
+//System.out.println("language: " + language + "department: " + department + "location: " + location + "offsetNum: " + offsetNum);		
+//		return hospitalService.filterHospitalByLangDepartLocation(language, department, location, offsetNum);
+//	}
+	
+	// 병원 & 필터링 기능(사용 언어, 진료과목, 지역) 동시에.
+	@GetMapping("/searchAndFilterHospital")
+	public List<Map<String, Object>> searchAndFilterHospital(@RequestParam(required = false) String hospitalName, @RequestParam(required = false) String language, @RequestParam(required = false) String department, @RequestParam(required = false)String location, int offsetNum){
+		return hospitalService.searchAndFilterHospital(hospitalName, language, department, location, offsetNum);
 	}
 	
-
 //	@PostMapping("/insertIntoChartInfo")
 //	public boolean insertIntoChartInfo(@RequestBody ChartInfoDto chartInfoDto) {
 //		return queryResultTableService.insertIntoChartInfo(chartInfoDto);
