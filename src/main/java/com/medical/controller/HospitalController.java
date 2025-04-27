@@ -6,9 +6,12 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.medical.dto.MemberRegisterDto;
 import com.medical.service.HospitalService;
 
 @RestController
@@ -101,11 +104,18 @@ System.out.println("offsetNum: " + offsetNum);
 		return hospitalService.searchAndFilterHospital(hospitalName, language, department, location, offsetNum);
 	}
 	
-//	@PostMapping("/insertIntoChartInfo")
-//	public boolean insertIntoChartInfo(@RequestBody ChartInfoDto chartInfoDto) {
-//		return queryResultTableService.insertIntoChartInfo(chartInfoDto);
-//	}
-//
+	// 회원가입
+	@PostMapping("/memberRegister")
+	public boolean memberRegister(@RequestBody MemberRegisterDto memberRegisterDto) {
+		return hospitalService.memberRegister(memberRegisterDto);
+	}
+	
+	// 로그인
+	@GetMapping("/memberLogin")
+	public boolean memberLogin(MemberRegisterDto memberRegisterDto) {
+		return hospitalService.memberLogin(memberRegisterDto);
+	}
+		
 //	@PutMapping("/updateChartDashboardConnect")
 //	public boolean updateChartDashboardConnect(@RequestBody ChartDashboardConnectDto chartDashboardConnectDto) {
 //		return queryResultTableService.updateChartDashboardConnect(chartDashboardConnectDto);
