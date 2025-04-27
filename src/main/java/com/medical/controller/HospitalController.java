@@ -11,8 +11,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.medical.dto.HospitalReservationDto;
+import com.medical.dto.HospitalReviewDto;
 import com.medical.dto.MemberRegisterDto;
 import com.medical.service.HospitalService;
+
+import jakarta.transaction.Transactional;
 
 @RestController
 @CrossOrigin("*")
@@ -112,8 +116,34 @@ System.out.println("offsetNum: " + offsetNum);
 	
 	// 로그인
 	@GetMapping("/memberLogin")
-	public boolean memberLogin(MemberRegisterDto memberRegisterDto) {
-		return hospitalService.memberLogin(memberRegisterDto);
+	public int memberLogin(@RequestParam String username, @RequestParam String password) {
+		return hospitalService.memberLogin(username, password);
+	}
+	
+	// 병원 리뷰 작성
+	@PostMapping("/insertHospitalReview")
+	public boolean insertHospitalReview(@RequestBody HospitalReviewDto hospitalReviewDto) {
+		return hospitalService.insertHospitalReview(hospitalReviewDto);
+	}
+	
+	
+	// 병원 id 통해서, hospital_review select 해오기
+	@GetMapping("/selectFromHospitalReview")
+	public List<Map<String, Object>> selectFromHospitalReview(@RequestParam int hospitalId, @RequestParam String source){
+		return hospitalService.selectFromHospitalReview(hospitalId, source);
+	}
+		
+	
+	// 진료예약 insert - hospital_reservation, gangnam_reservation/gangnam_reservation 연결 테이블, member_reservation 연결 테이블에 insert
+	@PostMapping("/insertHospitalReservation")
+	public boolean insertHospitalReservation(@RequestBody HospitalReservationDto hospitalReservationDto) {
+		return hospitalService.insertHospitalReservation(hospitalReservationDto);
+	}
+	
+	// member id 통해서, hospital_reservation select 해오기
+	@GetMapping("/selectFromHospitalReservation")
+	public List<Map<String, Object>> selectFromHospitalReservation(@RequestParam int memberId, @RequestParam String source){
+		return hospitalService.selectFromHospitalReservation(memberId, source);
 	}
 		
 //	@PutMapping("/updateChartDashboardConnect")

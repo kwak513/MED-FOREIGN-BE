@@ -32,6 +32,7 @@ public class SecurityConfig {
             .requestMatchers("/memberRegister", "/memberLogin").permitAll()
             .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
             .requestMatchers("/select15FromGangnamGangDongHospital", "/selectFromGangnamHospital", "/selectFromGangdongHospital", "searchAndFilterHospital").permitAll() 
+            .requestMatchers("/insertHospitalReview", "/selectFromHospitalReview", "/insertHospitalReservation", "/selectFromHospitalReservation").permitAll()
             .anyRequest().authenticated();
 
         // JWT 필터 등록
