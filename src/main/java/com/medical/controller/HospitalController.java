@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,17 +14,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.medical.dto.HospitalReservationDto;
 import com.medical.dto.HospitalReviewDto;
+import com.medical.dto.MemberFavoriteDto;
 import com.medical.dto.MemberRegisterDto;
 import com.medical.service.HospitalService;
-
-import jakarta.transaction.Transactional;
 
 @RestController
 @CrossOrigin("*")
 public class HospitalController {
 	@Autowired
 	HospitalService hospitalService;
-
+	
+//------------------------ 병원 관련 ------------------------	
 	// 메인 리스트 페이지에서 사용할 강남구와 강동구 병원 정보 가져오기(id, 병원명, 시·구 주소, 가능 언어, 대표과 1개)
 	@GetMapping("/select15FromGangnamGangDongHospital")
 	public List<Map<String, Object>> select15FromGangnamGangDongHospital(@RequestParam int offsetNum){
@@ -107,7 +108,7 @@ System.out.println("offsetNum: " + offsetNum);
 	public List<Map<String, Object>> searchAndFilterHospital(@RequestParam(required = false) String hospitalName, @RequestParam(required = false) String language, @RequestParam(required = false) String department, @RequestParam(required = false)String location, int offsetNum){
 		return hospitalService.searchAndFilterHospital(hospitalName, language, department, location, offsetNum);
 	}
-	
+// -------------------------- 회원  --------------------------
 	// 회원가입
 	@PostMapping("/memberRegister")
 	public boolean memberRegister(@RequestBody MemberRegisterDto memberRegisterDto) {
@@ -119,7 +120,17 @@ System.out.println("offsetNum: " + offsetNum);
 	public int memberLogin(@RequestParam String username, @RequestParam String password) {
 		return hospitalService.memberLogin(username, password);
 	}
+
+	// 회원 정보 조회(username)
+	@GetMapping("/selectUsername")
+	public String selectUsername(Long memberId) {
+		return hospitalService.selectUsername(memberId);
+	}
 	
+	/* selectUsername 결과:
+	 user5
+	 */
+// -------------------------- 리뷰  --------------------------
 	// 병원 리뷰 작성
 	@PostMapping("/insertHospitalReview")
 	public boolean insertHospitalReview(@RequestBody HospitalReviewDto hospitalReviewDto) {
@@ -129,11 +140,31 @@ System.out.println("offsetNum: " + offsetNum);
 	
 	// 병원 id 통해서, hospital_review select 해오기
 	@GetMapping("/selectFromHospitalReview")
-	public List<Map<String, Object>> selectFromHospitalReview(@RequestParam int hospitalId, @RequestParam String source){
+	public List<Map<String, Object>> selectFromHospitalReview(@RequestParam Long hospitalId, @RequestParam String source){
 		return hospitalService.selectFromHospitalReview(hospitalId, source);
 	}
-		
 	
+	// 회원이 작성한 리뷰 조회
+	@GetMapping("/selectReviewByMemberId")
+	public List<Map<String, Object>> selectReviewByMemberId(@RequestParam Long memberId){
+		return hospitalService.selectReviewByMemberId(memberId);
+	}
+	/*
+	[
+	  {
+	    "rate": 4,
+	    "created_at": "2025-04-27T11:56:46.000+00:00",
+	    "original_text": "doctors were nice!",
+	    "hospital_name": "아이비성형외과의원"
+	  },
+	  {
+	    "rate": 4,
+	    "created_at": "2025-04-27T13:13:48.000+00:00",
+	    "original_text": "this place is wonderful.",
+	    "hospital_name": "누브의원"
+	  }, {}, {} ,...
+	*/	
+// -------------------------- 진료예약 관련--------------------------		
 	// 진료예약 insert - hospital_reservation, gangnam_reservation/gangnam_reservation 연결 테이블, member_reservation 연결 테이블에 insert
 	@PostMapping("/insertHospitalReservation")
 	public boolean insertHospitalReservation(@RequestBody HospitalReservationDto hospitalReservationDto) {
@@ -142,8 +173,52 @@ System.out.println("offsetNum: " + offsetNum);
 	
 	// member id 통해서, hospital_reservation select 해오기
 	@GetMapping("/selectFromHospitalReservation")
-	public List<Map<String, Object>> selectFromHospitalReservation(@RequestParam int memberId, @RequestParam String source){
-		return hospitalService.selectFromHospitalReservation(memberId, source);
+	public List<Map<String, Object>> selectFromHospitalReservation(@RequestParam Long memberId){
+		return hospitalService.selectFromHospitalReservation(memberId);
+	}
+	/*
+	[
+	  {
+	    "sub_symptom": "설사/변비",
+	    "language": "영어",
+	    "reservation_time": "2025-05-07T15:00:00.000+00:00",
+	    "main_symptom": "소화기 질환",
+	    "detail_symptom": "테스트1",
+	    "hospital_name": "중앙보훈병원"
+	  }, {}, {} ,...
+	]
+	 */
+// -------------------------- 즐겨찾기 관련--------------------------	
+	// 즐겨찾기 추가 - member_favorite 테이블에 insert
+	@PostMapping("/insertIntoMemberFavorite")
+	public boolean insertIntoMemberFavorite(@RequestBody MemberFavoriteDto memberFavoriteDto) {
+		return hospitalService.insertIntoMemberFavorite(memberFavoriteDto);
+	}
+		
+	// 회원의 즐겨찾기 조회(병원 id, 병원명, 병원 메인 주소)
+	@GetMapping("/selectFromMemberFavorite")
+	public List<Map<String, Object>> selectFromMemberFavorite(@RequestParam Long memberId){
+		return hospitalService.selectFromMemberFavorite(memberId);
+	}
+	/*
+	[
+	  {
+	    "hospital_id": 1,
+	    "hospital_main_address": "서울시 강동구",
+	    "hospital_name": "중앙보훈병원"
+	  }, {}, {}, ...
+	] 
+	*/
+	// 병원 id와 회원 id로, 회원이 즐겨찾기한 병원인지 확인 
+	@GetMapping("/isFavoriteCheck")
+	public boolean isFavoriteCheck(@RequestParam Long memberId, @RequestParam Long hospitalId, @RequestParam String source) {
+		return hospitalService.isFavoriteCheck(memberId, hospitalId, source);
+	}
+	
+	// 즐겨찾기 삭제(취소)
+	@DeleteMapping("/deleteMemberFavorite")
+	public boolean deleteMemberFavorite(@RequestParam Long memberId, @RequestParam Long hospitalId, @RequestParam String source) {
+		return hospitalService.deleteMemberFavorite(memberId, hospitalId, source);
 	}
 		
 //	@PutMapping("/updateChartDashboardConnect")

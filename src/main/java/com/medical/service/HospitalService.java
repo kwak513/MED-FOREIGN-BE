@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.medical.common.JPAUtil;
 import com.medical.dto.HospitalReservationDto;
 import com.medical.dto.HospitalReviewDto;
+import com.medical.dto.MemberFavoriteDto;
 import com.medical.dto.MemberRegisterDto;
 
 import jakarta.persistence.EntityManager;
@@ -409,6 +410,25 @@ public class HospitalService {
 		}
 	}
 
+	
+	// 회원 정보 조회(username)
+	public String selectUsername(Long memberId){
+		
+		try {
+	        String sql = "SELECT username FROM member WHERE id = :id";
+	        Query query = em.createNativeQuery(sql);
+	        query.setParameter("id", memberId);
+
+	        String rs = (String) query.getSingleResult();
+
+	        return rs;
+
+	    } catch (Exception e) {
+	        System.out.println("selectUsername failed: " + e.getMessage());
+	        return "";
+	    }
+		
+	}
 // -------------------------- 리뷰  --------------------------
 	// text 받으면 어떤 언어인지 탐지해줌.
 	private static final String API_URL = "https://ws.detectlanguage.com/0.2/detect";
@@ -590,7 +610,7 @@ System.out.println("rate: " + hospitalReviewDto.getRate() + "original_language: 
 	}
 
 	// 병원 id 통해서, hospital_review select 해오기
-	public List<Map<String, Object>> selectFromHospitalReview(int hospitalId, String source){
+	public List<Map<String, Object>> selectFromHospitalReview(Long hospitalId, String source){
 		
 		try {
 			String sqlForReviewIds = "";
@@ -626,6 +646,62 @@ System.out.println("reviewIds: " + reviewIds);
 		}
 	}
 	
+	// 회원이 작성한 리뷰 조회
+	public List<Map<String, Object>> selectReviewByMemberId(Long memberId){
+		
+		try {
+	        String sql = "";
+
+	        sql = 	"(SELECT " +
+	                  "   hr.rate AS rate, " +
+	                  "   hr.original_text AS original_text, " +
+	                  "   hr.created_at AS created_at, " +
+	                  "   gh.gangnam_name AS hospital_name " +
+	                  "FROM " +
+	                  "   member_review mr " +
+	                  "JOIN " +
+	                  "   hospital_review hr ON mr.hospital_review_id = hr.id " +
+	                  "  JOIN " +
+	                  "   gangnam_review gr ON hr.id = gr.hospital_review_id " +
+	                  " JOIN " +
+	                  "   gangnam_hospital gh ON gr.gangnam_id = gh.id " +
+	                  "WHERE " +
+	                  "   mr.member_id = :memberId)" +
+	                  
+	                  " UNION " +
+	                  
+							        
+					"(SELECT " +
+					"   hr.rate AS rate, " +
+					"   hr.original_text AS original_text, " +
+					"   hr.created_at AS created_at, " +
+					"   gh.gangdong_name AS hospital_name " +
+					"FROM " +
+					"   member_review mr " +
+					"JOIN " +
+					"   hospital_review hr ON mr.hospital_review_id = hr.id " +
+					" JOIN " +
+					"   gangdong_review gr ON hr.id = gr.hospital_review_id " +
+					" JOIN " +
+					"   gangdong_hospital gh ON gr.gangdong_id = gh.id " +
+					"WHERE " +
+					"   mr.member_id = :memberId)";
+
+	        Query query = em.createNativeQuery(sql, Tuple.class);
+	        query.setParameter("memberId", memberId);
+
+	        List<Tuple> rs = query.getResultList();
+
+	        return JPAUtil.convertTupleToMap(rs);
+
+	    } catch (Exception e) {
+	        System.out.println("selectReviewByMemberId failed: " + e.getMessage());
+	        return new ArrayList<>();
+	    }
+		
+	}
+		
+	
 	
 // -------------------------- 진료예약 관련--------------------------
 	// 진료예약 insert - hospital_reservation, gangnam_reservation/gangnam_reservation 연결 테이블, member_reservation 연결 테이블에 insert
@@ -635,13 +711,14 @@ System.out.println("reviewIds: " + reviewIds);
 		
 		try {
 			// hospital_reservation 테이블에 insert
-			String sql = "INSERT INTO hospital_reservation (language, main_symptom, sub_symptom, detail_symptom) VALUES (:language, :main_symptom, :sub_symptom, :detail_symptom)";
+			String sql = "INSERT INTO hospital_reservation (language, main_symptom, sub_symptom, detail_symptom, reservation_time) VALUES (:language, :main_symptom, :sub_symptom, :detail_symptom, :reservation_time)";
 					
 	        Query query = em.createNativeQuery(sql);
 	        query.setParameter("language", hospitalReservationDto.getLanguage());
 	        query.setParameter("main_symptom", hospitalReservationDto.getMainSymptom());
 	        query.setParameter("sub_symptom", hospitalReservationDto.getSubSymptom());
 	        query.setParameter("detail_symptom", hospitalReservationDto.getDetailSymptom());
+	        query.setParameter("reservation_time", hospitalReservationDto.getReservationTime());
 	        
 	        int insertReservationNum = query.executeUpdate();
 	        
@@ -760,47 +837,44 @@ System.out.println("reviewIds: " + reviewIds);
 			}
 		}
 
-	// member id 통해서, hospital_reservation select 해오기
-	public List<Map<String, Object>> selectFromHospitalReservation(int memberId, String source){
+	// 회원의 진료 조회 - member id 통해서, hospital_reservation select 해오기(language, main_symptom, sub_symptom, detail_symptom, gangnam_name/ gangdong_name)
+	public List<Map<String, Object>> selectFromHospitalReservation(Long memberId){
 		
 		try {
-	        String sql = "";
+			String sql = "SELECT " +
+                    "    hr.language AS language, " +
+                    "    hr.main_symptom AS main_symptom, " +
+                    "    hr.sub_symptom AS sub_symptom, " +
+                    "    hr.detail_symptom AS detail_symptom, " +
+                    "    hr.reservation_time AS reservation_time, " +
+                    "    CASE " +
+                    "        WHEN gr.gangnam_id IS NOT NULL THEN gh.gangnam_name " +
+                    "        WHEN gdr.gangdong_id IS NOT NULL THEN gdh.gangdong_name " +
+                    "    END AS hospital_name, " +
+                    "    CASE " +
+                    "        WHEN gr.gangnam_id IS NOT NULL THEN 'gangnam' " +
+                    "        WHEN gdr.gangdong_id IS NOT NULL THEN 'gangdong' " +
+                    "    END AS source, " +
+                    "    CASE " +
+                    "        WHEN gr.gangnam_id IS NOT NULL THEN gh.id " +
+                    "        WHEN gdr.gangdong_id IS NOT NULL THEN gdh.id " +
+                    "    END AS hospital_id " +
+                    "FROM " +
+                    "    member_reservation mr " +
+                    "JOIN " +
+                    "    hospital_reservation hr ON mr.reservation_id = hr.id " +
+                    "LEFT JOIN " +
+                    "    gangnam_reservation gr ON hr.id = gr.reservation_id " +
+                    "LEFT JOIN " +
+                    "    gangnam_hospital gh ON gr.gangnam_id = gh.id " +
+                    "LEFT JOIN " +
+                    "    gangdong_reservation gdr ON hr.id = gdr.reservation_id " +
+                    "LEFT JOIN " +
+                    "    gangdong_hospital gdh ON gdr.gangdong_id = gdh.id " +
+                    "WHERE " +
+                    "    mr.member_id = :memberId";
 
-	        if ("gangnam".equals(source)) {
-	            sql = "SELECT " +
-	                  "   hr.language AS language, " +
-	                  "   hr.main_symptom AS main_symptom, " +
-	                  "   hr.sub_symptom AS sub_symptom, " +
-	                  "   hr.detail_symptom AS detail_symptom, " +
-	                  "   gh.gangnam_name AS hospital_name " +
-	                  "FROM " +
-	                  "   member_reservation mr " +
-	                  "JOIN " +
-	                  "   hospital_reservation hr ON mr.reservation_id = hr.id " +
-	                  "LEFT JOIN " +
-	                  "   gangnam_reservation gr ON hr.id = gr.reservation_id " +
-	                  "LEFT JOIN " +
-	                  "   gangnam_hospital gh ON gr.gangnam_id = gh.id " +
-	                  "WHERE " +
-	                  "   mr.member_id = :memberId";
-	        } else if ("gangdong".equals(source)) {
-	            sql = "SELECT " +
-	                  "   hr.language AS language, " +
-	                  "   hr.main_symptom AS main_symptom, " +
-	                  "   gdh.gangdong_name AS hospital_name " +
-	                  "FROM " +
-	                  "   member_reservation mr " +
-	                  "JOIN " +
-	                  "   hospital_reservation hr ON mr.reservation_id = hr.id " +
-	                  "LEFT JOIN " +
-	                  "   gangdong_reservation gdr ON hr.id = gdr.reservation_id " +
-	                  "LEFT JOIN " +
-	                  "   gangdong_hospital gdh ON gdr.gangdong_id = gdh.id " +
-	                  "WHERE " +
-	                  "   mr.member_id = :memberId";
-	        } else {
-	            return new ArrayList<>(); // 유효하지 않은 source
-	        }
+	        
 
 	        Query query = em.createNativeQuery(sql, Tuple.class);
 	        query.setParameter("memberId", memberId);
@@ -815,5 +889,133 @@ System.out.println("reviewIds: " + reviewIds);
 		
 	}
 		
+// -------------------------- 즐겨찾기 관련--------------------------
+	// 즐겨찾기 추가 - member_favorite 테이블에 insert
+	@Transactional
+	public boolean insertIntoMemberFavorite(MemberFavoriteDto memberFavoriteDto){
+		
+		try {
+			// member_favorite 테이블에 insert
+			String sql = "INSERT INTO member_favorite (member_id, hospital_source, hospital_id) VALUES (:member_id, :hospital_source, :hospital_id)";
+					
+	        Query query = em.createNativeQuery(sql);
+	        query.setParameter("member_id", memberFavoriteDto.getMemberId());
+	        query.setParameter("hospital_source", memberFavoriteDto.getHospitalSource());
+	        query.setParameter("hospital_id", memberFavoriteDto.getHospitalId());
+	        
+	        int rs = query.executeUpdate();
+	        
+	        if(rs == 1) {
+	        	System.out.println("insertIntoMemberFavorite 성공");
+	        	return true;
+	        }
+	        else {
+	        	System.out.println("insertIntoMemberFavorite 실패");
+	        	return false;
+	        }
+	        
+	        
+		} catch(Exception e) {
+			System.out.println("insertIntoMemberFavorite failed: "+ e.getMessage());
+			return false;
+		}
+	}
+	
+	// 회원의 즐겨찾기 조회(병원 id, 병원명, 병원 메인 주소)
+	public List<Map<String, Object>> selectFromMemberFavorite(Long memberId){
+		
+		try {
+			String sql = "SELECT " +
+		             "   CASE " +
+		             "       WHEN mf.hospital_source = 'gangnam' THEN gh.id " +
+		             "       WHEN mf.hospital_source = 'gangdong' THEN gdh.id " +
+		             "   END AS hospital_id, " +
+		             "   CASE " +
+		             "       WHEN mf.hospital_source = 'gangnam' THEN gh.gangnam_name " +
+		             "       WHEN mf.hospital_source = 'gangdong' THEN gdh.gangdong_name " +
+		             "   END AS hospital_name, " +
+		             "   CASE " +
+		             "       WHEN mf.hospital_source = 'gangnam' THEN gh.gangnam_main_address " +
+		             "       WHEN mf.hospital_source = 'gangdong' THEN gdh.gangdong_main_address " +
+		             "   END AS hospital_main_address " +
+		             "FROM " +
+		             "   member_favorite mf " +
+		             "LEFT JOIN " +
+		             "   gangnam_hospital gh ON mf.hospital_source = 'gangnam' AND mf.hospital_id = gh.id " +
+		             "LEFT JOIN " +
+		             "   gangdong_hospital gdh ON mf.hospital_source = 'gangdong' AND mf.hospital_id = gdh.id " +
+		             "WHERE " +
+		             "   mf.member_id = :memberId";
+
+	        Query query = em.createNativeQuery(sql, Tuple.class);
+	        query.setParameter("memberId", memberId);
+
+	        List<Tuple> rs = query.getResultList();
+
+	        return JPAUtil.convertTupleToMap(rs);
+
+	    } catch (Exception e) {
+	        System.out.println("selectFromMemberFavorite failed: " + e.getMessage());
+	        return new ArrayList<>();
+	    }
+		
+	}
+	
+	// 병원 id와 회원 id로, 회원이 즐겨찾기한 병원인지 확인 
+	public boolean isFavoriteCheck(Long memberId, Long hospitalId, String source){
+		
+		try {
+			String sql = "SELECT COUNT(*) FROM member_favorite WHERE member_id = :member_id AND hospital_id = :hospital_id AND hospital_source = :hospital_source";
+
+	        Query query = em.createNativeQuery(sql);
+	        query.setParameter("member_id", memberId);
+	        query.setParameter("hospital_id", hospitalId);
+	        query.setParameter("hospital_source", source);
+
+	        Long rs = (Long) query.getSingleResult();
+	        
+	        if(rs == 1) {
+	        	System.out.println("즐겨찾기된 병원");
+	        	return true;
+	        }
+	        else {
+	        	System.out.println("즐겨찾기 안된 병원");
+	        	return false;
+	        }
+	    } catch (Exception e) {
+	        System.out.println("isFavoriteCheck failed: " + e.getMessage());
+	        return false;
+	    }
+		
+	}
+	
+	// 즐겨찾기 삭제(취소)
+	@Transactional
+	public boolean deleteMemberFavorite(Long memberId, Long hospitalId, String source){
+		
+		try {
+			String sql = "DELETE FROM member_favorite WHERE member_id = :member_id AND hospital_id = :hospital_id AND hospital_source = :hospital_source";
+
+	        Query query = em.createNativeQuery(sql);
+	        query.setParameter("member_id", memberId);
+	        query.setParameter("hospital_id", hospitalId);
+	        query.setParameter("hospital_source", source);
+
+	        int deleteNum = query.executeUpdate();
+	        
+	        if(deleteNum == 1) {
+	        	System.out.println("즐겨찾기 삭제(취소)");
+	        	return true;
+	        }
+	        else {
+	        	System.out.println("즐겨찾기 삭제(취소) 실패");
+	        	return false;
+	        }
+	    } catch (Exception e) {
+	        System.out.println("deleteMemberFavorite failed: " + e.getMessage());
+	        return false;
+	    }
+		
+	}
 
 }

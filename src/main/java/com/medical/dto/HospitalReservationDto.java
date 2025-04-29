@@ -1,7 +1,6 @@
 package com.medical.dto;
 
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,6 +14,8 @@ public class HospitalReservationDto {
 	String mainSymptom;
 	String subSymptom;
 	String detailSymptom;
+	
+	String reservationTime;
 	
 	String source;
 	
