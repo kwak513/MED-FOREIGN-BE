@@ -152,113 +152,10 @@ public class HospitalService {
 		}
 	}
 
-//	// 병원명 검색하기
-//	public List<Map<String, Object>> selectByHospitalName(String hospitalName, int offsetNum){
-//		
-//		try {
-//			String sql = "(SELECT gangdong_name AS hospital_name, "
-//						+ "gangdong_languages AS hospital_languages, "
-//						+ "gangdong_main_address AS hospital_main_address, "
-//						+ "SUBSTRING_INDEX(gangdong_category, ',', 1) AS hospital_main_category, "
-//						+ "'gangdong' AS source, "
-//						+ "id AS hospital_id "
-//						+"FROM gangdong_hospital "
-//						+"WHERE gangdong_name LIKE CONCAT('%', :hospital_name, '%') "
-//						+ "ORDER BY id ASC "
-//						+ "LIMIT 15 OFFSET :OFFSET) "
-//						+ "UNION "
-//						+"(SELECT gangnam_name AS hospital_name, "
-//						+ "gangnam_languages AS hospital_languages, "
-//						+ "gangnam_main_address AS hospital_main_address, "
-//						+ "SUBSTRING_INDEX(gangnam_category, ',', 1) AS hospital_main_category, "
-//						+ "'gangnam' AS source, "
-//						+ "id AS hospital_id "
-//						+"FROM gangnam_hospital "
-//						+"WHERE gangnam_name LIKE CONCAT('%', :hospital_name, '%') "
-//						+ "ORDER BY id ASC "
-//						+ "LIMIT 15 OFFSET :OFFSET) "
-//						;
-//					
-//			
-//			
-//			
-//			Query query = em.createNativeQuery(sql, Tuple.class);
-//			query.setParameter("hospital_name", hospitalName);
-//			query.setParameter("OFFSET", offsetNum);
-//		
-//			List<Tuple> rs = query.getResultList();
-//			
-//			List<Map<String, Object>> rsToMap = JPAUtil.convertTupleToMap(rs);
-//			return rsToMap;
-//			
-//		} catch(Exception e) {
-//			System.out.println("selectByHospitalName failed: "+ e.getMessage());
-//			return new ArrayList<>();
-//		}
-//	}
-//
-//	// 필터링 기능(사용 언어, 진료과목, 지역)
-//	public List<Map<String, Object>> filterHospitalByLangDepartLocation(String language, String department, String location, int offsetNum){
-//		
-//		try {
-//			String sql = ""
-//			        + "(SELECT gangdong_name AS hospital_name, "
-//			        + "gangdong_languages AS hospital_languages, "
-//			        + "gangdong_main_address AS hospital_main_address, "
-//			        + "SUBSTRING_INDEX(gangdong_category, ',', 1) AS hospital_main_category, "
-//			        + "'gangdong' AS source, "
-//			        + "id AS hospital_id "
-//			        + "FROM gangdong_hospital "
-//			        + "WHERE (:LANGUAGE IS NULL OR gangdong_languages LIKE CONCAT('%', :LANGUAGE, '%')) "
-//			        + "  AND (:DEPARTMENT IS NULL OR gangdong_category LIKE CONCAT('%', :DEPARTMENT, '%')) "
-//			        + "  AND (:LOCATION IS NULL OR gangdong_main_address LIKE CONCAT('%', :LOCATION, '%')) "
-//			        + "ORDER BY hospital_id ASC "
-//			        + "LIMIT 15 OFFSET :OFFSET) "
-//			        + "UNION ALL"
-//			        + "(SELECT gangnam_name AS hospital_name, "
-//			        + "gangnam_languages AS hospital_languages, "
-//			        + "gangnam_main_address AS hospital_main_address, "
-//			        + "SUBSTRING_INDEX(gangnam_category, ',', 1) AS hospital_main_category, "
-//			        + "'gangnam' AS source, "
-//			        + "id AS hospital_id "
-//			        + "FROM gangnam_hospital "
-//			        + "WHERE (:LANGUAGE IS NULL OR gangnam_languages LIKE CONCAT('%', "
-//			        + "    CASE :LANGUAGE "
-//			        + "        WHEN '영어' THEN '미국' "
-//			        + "        WHEN '일어' THEN '일본' "
-//			        + "        WHEN '중국어' THEN '중국' "
-//			        + "        WHEN '러시아어' THEN '러시아' "
-//			        + "        WHEN '중동어' THEN '중동' "
-//			        + "        WHEN '몽골어' THEN '몽골' "
-//			        + "        WHEN '베트남어' THEN '베트남' "
-//			        + "        ELSE :LANGUAGE "
-//			        + "    END, "
-//			        + "    '%')) "
-//			        + "  AND (:DEPARTMENT IS NULL OR gangnam_category LIKE CONCAT('%', :DEPARTMENT, '%')) "
-//			        + "  AND (:LOCATION IS NULL OR gangnam_main_address LIKE CONCAT('%', :LOCATION, '%')) "
-//			        + "ORDER BY hospital_id ASC "
-//			        + "LIMIT 15 OFFSET :OFFSET);";
-//					
-//			Query query = em.createNativeQuery(sql, Tuple.class);
-//			query.setParameter("LANGUAGE", language.trim());
-//			query.setParameter("DEPARTMENT", department.trim());
-//			query.setParameter("LOCATION", location.trim());
-//			query.setParameter("OFFSET", offsetNum);
-//		
-//			List<Tuple> rs = query.getResultList();
-//			
-//			List<Map<String, Object>> rsToMap = JPAUtil.convertTupleToMap(rs);
-//			return rsToMap;
-//			
-//		} catch(Exception e) {
-//			System.out.println("filterHospitalByLangDepartLocation failed: "+ e.getMessage());
-//			return new ArrayList<>();
-//		}
-//	}
 	
 	// 병원 & 필터링 기능(사용 언어, 진료과목, 지역) 동시에.
 	public List<Map<String, Object>> searchAndFilterHospital(String hospitalName, String language, String department, String location, int offsetNum){
-		
+		System.out.println("**searchAndFilterHospital** hospitalName: " + hospitalName + "language: " + language + "department: " + department + "location: " + location + "offsetNum: " + offsetNum);
 		try {
 			String sql = 
 					"(SELECT gangdong_name AS hospital_name, "
@@ -296,18 +193,30 @@ public class HospitalService {
 			        + "        ELSE :LANGUAGE "
 			        + "    END, "
 			        + "    '%')) "
-			        + "  AND (:DEPARTMENT IS NULL OR FIND_IN_SET(:DEPARTMENT, gangdong_category)) "
+			        + "  AND (:DEPARTMENT IS NULL OR FIND_IN_SET(:DEPARTMENT, gangnam_category)) "
 			        + "  AND (:LOCATION IS NULL OR gangnam_main_address LIKE CONCAT('%', :LOCATION, '%')) "
 					+ "  AND (:hospital_name IS NULL OR gangnam_name LIKE CONCAT('%', :hospital_name, '%')) "
 			        + "ORDER BY hospital_id ASC "
 			        + "LIMIT 15 OFFSET :OFFSET);";
 
 	        Query query = em.createNativeQuery(sql, Tuple.class);
-	        query.setParameter("hospital_name", hospitalName);
-	        query.setParameter("LANGUAGE", language.trim());
-			query.setParameter("DEPARTMENT", department.trim());
-			query.setParameter("LOCATION", location.trim());
+//	        query.setParameter("hospital_name", hospitalName);
+//	        query.setParameter("LANGUAGE", language.trim());
+//			query.setParameter("DEPARTMENT", department.trim());
+//			query.setParameter("LOCATION", location.trim());
+//	        query.setParameter("OFFSET", offsetNum);
+	        
+	        String hospitalNameParam = (hospitalName == null || hospitalName.trim().isEmpty()) ? null : hospitalName.trim();
+	        String languageParam = (language == null || language.trim().isEmpty()) ? null : language.trim();
+	        String departmentParam = (department == null || department.trim().isEmpty() || "전체".equals(department.trim())) ? null : department.trim();
+	        String locationParam = (location == null || location.trim().isEmpty()) ? null : location.trim();
+
+	        query.setParameter("hospital_name", hospitalNameParam);
+	        query.setParameter("LANGUAGE", languageParam);
+	        query.setParameter("DEPARTMENT", departmentParam);
+	        query.setParameter("LOCATION", locationParam);
 	        query.setParameter("OFFSET", offsetNum);
+//	        
 
 		
 			List<Tuple> rs = query.getResultList();
@@ -316,7 +225,7 @@ public class HospitalService {
 			return rsToMap;
 			
 		} catch(Exception e) {
-			System.out.println("filterHospitalByLangDepartLocation failed: "+ e.getMessage());
+			System.out.println("searchAndFilterHospital failed: "+ e.getMessage());
 			return new ArrayList<>();
 		}
 	}
