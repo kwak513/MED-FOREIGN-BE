@@ -269,7 +269,7 @@ public class HospitalService {
 			        + "id AS hospital_id "
 			        + "FROM gangdong_hospital "
 			        + "WHERE (:LANGUAGE IS NULL OR gangdong_languages LIKE CONCAT('%', :LANGUAGE, '%')) "
-			        + "  AND (:DEPARTMENT IS NULL OR gangdong_category LIKE CONCAT('%', :DEPARTMENT, '%')) "
+			        + "  AND (:DEPARTMENT IS NULL OR FIND_IN_SET(:DEPARTMENT, gangdong_category)) "
 			        + "  AND (:LOCATION IS NULL OR gangdong_main_address LIKE CONCAT('%', :LOCATION, '%')) "
 					+ "  AND (:hospital_name IS NULL OR gangdong_name LIKE CONCAT('%', :hospital_name, '%')) "
 			        
@@ -287,7 +287,7 @@ public class HospitalService {
 			        + "WHERE (:LANGUAGE IS NULL OR gangnam_languages LIKE CONCAT('%', "
 			        + "    CASE :LANGUAGE "
 			        + "        WHEN '영어' THEN '미국' "
-			        + "        WHEN '일어' THEN '일본' "
+			        + "        WHEN '일본어' THEN '일본' "
 			        + "        WHEN '중국어' THEN '중국' "
 			        + "        WHEN '러시아어' THEN '러시아' "
 			        + "        WHEN '중동어' THEN '중동' "
@@ -296,7 +296,7 @@ public class HospitalService {
 			        + "        ELSE :LANGUAGE "
 			        + "    END, "
 			        + "    '%')) "
-			        + "  AND (:DEPARTMENT IS NULL OR gangnam_category LIKE CONCAT('%', :DEPARTMENT, '%')) "
+			        + "  AND (:DEPARTMENT IS NULL OR FIND_IN_SET(:DEPARTMENT, gangdong_category)) "
 			        + "  AND (:LOCATION IS NULL OR gangnam_main_address LIKE CONCAT('%', :LOCATION, '%')) "
 					+ "  AND (:hospital_name IS NULL OR gangnam_name LIKE CONCAT('%', :hospital_name, '%')) "
 			        + "ORDER BY hospital_id ASC "
@@ -330,11 +330,12 @@ public class HospitalService {
 		
 		try {
 			// 이미 가입된 회원 있는지 확인
-			String sql = "SELECT COUNT(*) FROM MEMBER WHERE USERNAME = :USERNAME";
+			String sql = "SELECT COUNT(*) FROM MEMBER WHERE USERNAME = :USERNAME OR EMAIL = :EMAIL";
 					
 
 	        Query query = em.createNativeQuery(sql);
 	        query.setParameter("USERNAME", memberRegisterDto.getUsername());
+	        query.setParameter("EMAIL", memberRegisterDto.getEmail());
 	        
 	        Long rs = (Long) query.getSingleResult();
 	        
@@ -346,10 +347,14 @@ public class HospitalService {
 	        else {
 	        	String hashedPassword = passwordEncoder.encode(memberRegisterDto.getPassword());
 
-                String sql2 = "INSERT INTO MEMBER (USERNAME, PASSWORD) VALUES (:USERNAME, :PASSWORD)";
+                String sql2 = "INSERT INTO MEMBER (USERNAME, PASSWORD, phone_num, gender, birth_date, email) VALUES (:USERNAME, :PASSWORD, :phone_num, :gender, :birth_date, :email)";
                 Query query2 = em.createNativeQuery(sql2);
                 query2.setParameter("USERNAME", memberRegisterDto.getUsername());
                 query2.setParameter("PASSWORD", hashedPassword); // 해싱된 비밀번호 저장
+                query2.setParameter("phone_num", memberRegisterDto.getPhoneNum());
+                query2.setParameter("gender", memberRegisterDto.getGender());
+                query2.setParameter("birth_date", memberRegisterDto.getBirthDate());
+                query2.setParameter("email", memberRegisterDto.getEmail());
 
                 int registerNum = query2.executeUpdate();
 		        
@@ -411,24 +416,69 @@ public class HospitalService {
 	}
 
 	
-	// 회원 정보 조회(username)
-	public String selectUsername(Long memberId){
+	// 회원 정보 조회(username, phone_num, gender, birth_date, email)
+	public Map<String, Object> selectUserInfo(Long memberId){
 		
 		try {
-	        String sql = "SELECT username FROM member WHERE id = :id";
-	        Query query = em.createNativeQuery(sql);
+	        String sql = "SELECT username, phone_num, gender, birth_date, email FROM member WHERE id = :id";
+	        Query query = em.createNativeQuery(sql, Tuple.class);
 	        query.setParameter("id", memberId);
 
-	        String rs = (String) query.getSingleResult();
-
-	        return rs;
+	        Tuple userInfo = (Tuple) query.getSingleResult();
+			return JPAUtil.convertTupleToMap(userInfo);
+			
 
 	    } catch (Exception e) {
-	        System.out.println("selectUsername failed: " + e.getMessage());
+	        System.out.println("selectUserInfo failed: " + e.getMessage());
+	        return new HashMap<>();
+	    }
+		
+	}
+	
+	// 회원 아이디 찾기
+	public String selectUserName(String email){
+		
+		try {
+	        String sql = "SELECT username FROM member WHERE email = :email";
+	        Query query = em.createNativeQuery(sql);
+	        query.setParameter("email", email);
+
+	        String username = (String) query.getSingleResult();
+			return username;
+			
+
+	    } catch (Exception e) {
+	        System.out.println("selectUserName failed: " + e.getMessage());
 	        return "";
 	    }
 		
 	}
+	
+	// 회원 비밀번호 찾기(실제 구현X, 이메일 입력하면 존재하는 회원인지만 체크해서 메일 발송 알림만)
+	public boolean isUserExist(String email){
+		
+		try {
+	        String sql = "SELECT COUNT(*) FROM MEMBER WHERE EMAIL = :EMAIL";
+	        Query query = em.createNativeQuery(sql);
+	        query.setParameter("EMAIL", email);
+
+	        Long userCount = (Long) query.getSingleResult();
+	        
+	        if(userCount == 1) {
+	        	System.out.println("이메일에 매칭되는 회원 존재");
+	        	return true;
+	        }
+	        else {
+	        	System.out.println("이메일에 매칭되는 회원 존재 X");
+	        	return false;
+	        }
+	    } catch (Exception e) {
+	        System.out.println("isUserExist failed: " + e.getMessage());
+	        return false;
+	    }
+		
+	}
+		
 // -------------------------- 리뷰  --------------------------
 	// text 받으면 어떤 언어인지 탐지해줌.
 	private static final String API_URL = "https://ws.detectlanguage.com/0.2/detect";

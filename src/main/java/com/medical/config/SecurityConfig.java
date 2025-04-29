@@ -29,7 +29,7 @@ public class SecurityConfig {
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
             .authorizeRequests()
-            .requestMatchers("/memberRegister", "/memberLogin", "/selectUsername").permitAll()
+            .requestMatchers("/memberRegister", "/memberLogin", "/selectUserInfo", "/selectUserName", "/isUserExist").permitAll()
             .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
             .requestMatchers("/select15FromGangnamGangDongHospital", "/selectFromGangnamHospital", "/selectFromGangdongHospital", "searchAndFilterHospital").permitAll() 
             .requestMatchers("/insertHospitalReview", "/selectFromHospitalReview", "/insertHospitalReservation", "/selectFromHospitalReservation", "/selectReviewByMemberId", "/insertIntoMemberFavorite", "/selectFromMemberFavorite", "/isFavoriteCheck", "/deleteMemberFavorite").permitAll()

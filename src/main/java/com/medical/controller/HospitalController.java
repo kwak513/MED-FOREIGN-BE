@@ -121,15 +121,23 @@ System.out.println("offsetNum: " + offsetNum);
 		return hospitalService.memberLogin(username, password);
 	}
 
-	// 회원 정보 조회(username)
-	@GetMapping("/selectUsername")
-	public String selectUsername(Long memberId) {
-		return hospitalService.selectUsername(memberId);
+	// 회원 정보 조회(username, phone_num, gender, birth_date, email)
+	@GetMapping("/selectUserInfo")
+	public Map<String, Object> selectUserInfo(Long memberId) {
+		return hospitalService.selectUserInfo(memberId);
 	}
 	
-	/* selectUsername 결과:
-	 user5
-	 */
+	// 회원 아이디 찾기
+	@GetMapping("/selectUserName")
+	public String selectUserName(@RequestParam String email) {
+		return hospitalService.selectUserName(email);
+	}
+	
+	// 회원 비밀번호 찾기(실제 구현X, 이메일 입력하면 존재하는 회원인지만 체크해서 메일 발송 알림만)
+	@GetMapping("/isUserExist")
+	public boolean isUserExist(String email) {
+		return hospitalService.isUserExist(email);
+	}
 // -------------------------- 리뷰  --------------------------
 	// 병원 리뷰 작성
 	@PostMapping("/insertHospitalReview")
