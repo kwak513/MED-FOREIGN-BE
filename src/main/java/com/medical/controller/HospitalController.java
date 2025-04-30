@@ -8,15 +8,21 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.medical.dto.ChangedReservationDto;
+import com.medical.dto.ChangedReviewDto;
 import com.medical.dto.HospitalReservationDto;
 import com.medical.dto.HospitalReviewDto;
 import com.medical.dto.MemberFavoriteDto;
+import com.medical.dto.MemberInfoChangedDto;
 import com.medical.dto.MemberRegisterDto;
 import com.medical.service.HospitalService;
+
+import jakarta.transaction.Transactional;
 
 @RestController
 @CrossOrigin("*")
@@ -138,6 +144,13 @@ System.out.println("offsetNum: " + offsetNum);
 	public boolean isUserExist(String email) {
 		return hospitalService.isUserExist(email);
 	}
+	
+	// 회원 정보 수정
+	@PutMapping("/changeUserInfo")
+	public boolean changeUserInfo(@RequestBody MemberInfoChangedDto memberInfoChangedDto) {
+		return hospitalService.changeUserInfo(memberInfoChangedDto);
+	}
+		
 // -------------------------- 리뷰  --------------------------
 	// 병원 리뷰 작성
 	@PostMapping("/insertHospitalReview")
@@ -172,6 +185,13 @@ System.out.println("offsetNum: " + offsetNum);
 	    "hospital_name": "누브의원"
 	  }, {}, {} ,...
 	*/	
+	
+	// 리뷰 수정
+	@PutMapping("/changeReview")
+	public boolean changeReview(@RequestBody ChangedReviewDto changedReviewDto) {
+		return hospitalService.changeReview(changedReviewDto);
+	}
+	
 // -------------------------- 진료예약 관련--------------------------		
 	// 진료예약 insert - hospital_reservation, gangnam_reservation/gangnam_reservation 연결 테이블, member_reservation 연결 테이블에 insert
 	@PostMapping("/insertHospitalReservation")
@@ -196,6 +216,13 @@ System.out.println("offsetNum: " + offsetNum);
 	  }, {}, {} ,...
 	]
 	 */
+	
+	// 예약한 진료 수정
+	@PutMapping("/changeReservation")
+	public boolean changeReservation(@RequestBody ChangedReservationDto changedReservationDto) {
+		return hospitalService.changeReservation(changedReservationDto);
+	}
+	
 // -------------------------- 즐겨찾기 관련--------------------------	
 	// 즐겨찾기 추가 - member_favorite 테이블에 insert
 	@PostMapping("/insertIntoMemberFavorite")

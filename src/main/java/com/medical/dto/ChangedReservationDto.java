@@ -7,17 +7,11 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class HospitalReservationDto {
+public class ChangedReservationDto {
 	String language;
 	String mainSymptom;
 	String subSymptom;
 	String detailSymptom;
-	
 	String reservationTime;
-	
-	String source;
-	
-	Long hospitalId;
-	Long memberId;
-	
+	Long reservationId;
 }

@@ -7,11 +7,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class HospitalReviewDto {
+public class ChangedReviewDto {
 	int rate;
-	String source;
 	String originalTxt;
-	Long hospitalId;
-	Long memberId;
-	
+	Long reviewId;
 }

@@ -18,9 +18,12 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.medical.common.JPAUtil;
+import com.medical.dto.ChangedReservationDto;
+import com.medical.dto.ChangedReviewDto;
 import com.medical.dto.HospitalReservationDto;
 import com.medical.dto.HospitalReviewDto;
 import com.medical.dto.MemberFavoriteDto;
+import com.medical.dto.MemberInfoChangedDto;
 import com.medical.dto.MemberRegisterDto;
 
 import jakarta.persistence.EntityManager;
@@ -387,7 +390,41 @@ public class HospitalService {
 	    }
 		
 	}
+	
+	// 회원 정보 수정
+	@Transactional
+	public boolean changeUserInfo(MemberInfoChangedDto memberInfoChangedDto){
 		
+		try {
+			
+			String hashedPassword = passwordEncoder.encode(memberInfoChangedDto.getPassword());
+			
+	        String sql = "UPDATE member SET phone_num = :phone_num, gender = :gender, birth_date = :birth_date, email = :email, password = :password WHERE id = :id";
+	        Query query = em.createNativeQuery(sql);
+	        query.setParameter("phone_num", memberInfoChangedDto.getPhoneNum());
+	        query.setParameter("gender", memberInfoChangedDto.getGender());
+	        query.setParameter("birth_date", memberInfoChangedDto.getBirthDate());
+	        query.setParameter("email", memberInfoChangedDto.getEmail());
+	        query.setParameter("password", hashedPassword);
+	        query.setParameter("id", memberInfoChangedDto.getId());
+	        
+	        int rs = (int) query.executeUpdate();
+	        if(rs == 1) {
+	        	System.out.println("회원 정보 수정 성공");
+	        	return true;
+	        }
+	        else {
+	        	System.out.println("회원 정보 수정 실패");
+	        	return false;
+	        }
+			
+
+	    } catch (Exception e) {
+	        System.out.println("changeUserInfo failed: " + e.getMessage());
+	        return false;
+	    }
+		
+	}
 // -------------------------- 리뷰  --------------------------
 	// text 받으면 어떤 언어인지 탐지해줌.
 	private static final String API_URL = "https://ws.detectlanguage.com/0.2/detect";
@@ -612,6 +649,7 @@ System.out.println("reviewIds: " + reviewIds);
 	        String sql = "";
 
 	        sql = 	"(SELECT " +
+	        		  "hr.id AS review_id, " + 
 	                  "   hr.rate AS rate, " +
 	                  "   hr.original_text AS original_text, " +
 	                  "   hr.created_at AS created_at, " +
@@ -631,6 +669,7 @@ System.out.println("reviewIds: " + reviewIds);
 	                  
 							        
 					"(SELECT " +
+					"hr.id AS review_id, " + 
 					"   hr.rate AS rate, " +
 					"   hr.original_text AS original_text, " +
 					"   hr.created_at AS created_at, " +
@@ -660,7 +699,35 @@ System.out.println("reviewIds: " + reviewIds);
 		
 	}
 		
-	
+	// 리뷰 수정
+	@Transactional
+	public boolean changeReview(ChangedReviewDto changedReviewDto){
+		
+		try {
+	        String sql = "UPDATE hospital_review SET rate = :rate, original_text = :original_text, created_at = NOW() WHERE id = :id";
+	        
+	        Query query = em.createNativeQuery(sql);
+	        query.setParameter("rate", changedReviewDto.getRate());
+	        query.setParameter("original_text", changedReviewDto.getOriginalTxt());
+	        query.setParameter("id", changedReviewDto.getReviewId());
+	        
+	        int rs = (int) query.executeUpdate();
+	        if(rs == 1) {
+	        	System.out.println("리뷰 수정 성공");
+	        	return true;
+	        }
+	        else {
+	        	System.out.println("리뷰 수정 실패");
+	        	return false;
+	        }
+			
+
+	    } catch (Exception e) {
+	        System.out.println("changeReview failed: " + e.getMessage());
+	        return false;
+	    }
+		
+	}
 	
 // -------------------------- 진료예약 관련--------------------------
 	// 진료예약 insert - hospital_reservation, gangnam_reservation/gangnam_reservation 연결 테이블, member_reservation 연결 테이블에 insert
@@ -847,7 +914,39 @@ System.out.println("reviewIds: " + reviewIds);
 	    }
 		
 	}
+	
+	
+	// 예약한 진료 수정
+	@Transactional
+	public boolean changeReservation(ChangedReservationDto changedReservationDto){
+		try {
+	        String sql = "UPDATE hospital_reservation SET language = :language, main_symptom = :main_symptom, sub_symptom = :sub_symptom, detail_symptom = :detail_symptom, reservation_time = :reservation_time WHERE id = :id";
+	        
+	        Query query = em.createNativeQuery(sql);
+	        query.setParameter("language", changedReservationDto.getLanguage());
+	        query.setParameter("main_symptom", changedReservationDto.getMainSymptom());
+	        query.setParameter("sub_symptom", changedReservationDto.getSubSymptom());
+	        query.setParameter("detail_symptom", changedReservationDto.getDetailSymptom());
+	        query.setParameter("reservation_time", changedReservationDto.getReservationTime());
+	        query.setParameter("id", changedReservationDto.getReservationId());
+	        
+	        int rs = (int) query.executeUpdate();
+	        if(rs == 1) {
+	        	System.out.println("예약한 진료  수정 성공");
+	        	return true;
+	        }
+	        else {
+	        	System.out.println("예약한 진료  수정 실패");
+	        	return false;
+	        }
+			
+
+	    } catch (Exception e) {
+	        System.out.println("changeReservation failed: " + e.getMessage());
+	        return false;
+	    }
 		
+	}
 // -------------------------- 즐겨찾기 관련--------------------------
 	// 즐겨찾기 추가 - member_favorite 테이블에 insert
 	@Transactional
@@ -885,6 +984,7 @@ System.out.println("reviewIds: " + reviewIds);
 		
 		try {
 			String sql = "SELECT " +
+					 "mf.hospital_source as hospital_source, " +
 		             "   CASE " +
 		             "       WHEN mf.hospital_source = 'gangnam' THEN gh.id " +
 		             "       WHEN mf.hospital_source = 'gangdong' THEN gdh.id " +

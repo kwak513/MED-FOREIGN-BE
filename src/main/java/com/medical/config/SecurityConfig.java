@@ -29,10 +29,10 @@ public class SecurityConfig {
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
             .authorizeRequests()
-            .requestMatchers("/memberRegister", "/memberLogin", "/selectUserInfo", "/selectUserName", "/isUserExist").permitAll()
+            .requestMatchers("/memberRegister", "/memberLogin", "/selectUserInfo", "/selectUserName", "/isUserExist", "/changeUserInfo").permitAll()
             .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
             .requestMatchers("/select15FromGangnamGangDongHospital", "/selectFromGangnamHospital", "/selectFromGangdongHospital", "searchAndFilterHospital").permitAll() 
-            .requestMatchers("/insertHospitalReview", "/selectFromHospitalReview", "/insertHospitalReservation", "/selectFromHospitalReservation", "/selectReviewByMemberId", "/insertIntoMemberFavorite", "/selectFromMemberFavorite", "/isFavoriteCheck", "/deleteMemberFavorite").permitAll()
+            .requestMatchers("/insertHospitalReview", "/selectFromHospitalReview", "/changeReview", "/insertHospitalReservation", "/selectFromHospitalReservation", "/changeReservation" ,"/selectReviewByMemberId", "/insertIntoMemberFavorite", "/selectFromMemberFavorite", "/isFavoriteCheck", "/deleteMemberFavorite").permitAll()
             .anyRequest().authenticated();
 
         // JWT 필터 등록
