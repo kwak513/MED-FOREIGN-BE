@@ -32,7 +32,7 @@ public class SecurityConfig {
             .requestMatchers("/memberRegister", "/memberLogin", "/selectUserInfo", "/selectUserName", "/isUserExist", "/changeUserInfo").permitAll()
             .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
             .requestMatchers("/select15FromGangnamGangDongHospital", "/selectFromGangnamHospital", "/selectFromGangdongHospital", "searchAndFilterHospital").permitAll() 
-            .requestMatchers("/insertHospitalReview", "/selectFromHospitalReview", "/changeReview", "/insertHospitalReservation", "/selectFromHospitalReservation", "/changeReservation" ,"/selectReviewByMemberId", "/insertIntoMemberFavorite", "/selectFromMemberFavorite", "/isFavoriteCheck", "/deleteMemberFavorite").permitAll()
+            .requestMatchers("/insertHospitalReview", "/selectFromHospitalReview", "/changeReview", "/deleteReview", "/insertHospitalReservation", "/selectFromHospitalReservation", "/changeReservation", "/deleteReservation" ,"/selectReviewByMemberId", "/insertIntoMemberFavorite", "/selectFromMemberFavorite", "/isFavoriteCheck", "/deleteMemberFavorite").permitAll()
             .anyRequest().authenticated();
 
         // JWT 필터 등록

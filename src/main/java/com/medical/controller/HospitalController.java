@@ -192,6 +192,12 @@ System.out.println("offsetNum: " + offsetNum);
 		return hospitalService.changeReview(changedReviewDto);
 	}
 	
+	// 리뷰 삭제 - hospital_review, gangnam_review/ gangdong_review, member_review 테이블에서 모두 삭제해야함.
+	@DeleteMapping("/deleteReview")
+	public boolean deleteReview(@RequestParam Long hospitalReviewId, @RequestParam String source) {
+		return hospitalService.deleteReview(hospitalReviewId, source);
+	}
+	
 // -------------------------- 진료예약 관련--------------------------		
 	// 진료예약 insert - hospital_reservation, gangnam_reservation/gangnam_reservation 연결 테이블, member_reservation 연결 테이블에 insert
 	@PostMapping("/insertHospitalReservation")
@@ -221,6 +227,12 @@ System.out.println("offsetNum: " + offsetNum);
 	@PutMapping("/changeReservation")
 	public boolean changeReservation(@RequestBody ChangedReservationDto changedReservationDto) {
 		return hospitalService.changeReservation(changedReservationDto);
+	}
+	
+	// 예약한 진료 삭제 - hospital_reservation, gangnam_reservation/ gangdong_reservation, member_reservation 테이블에서 모두 삭제해야함.
+	@DeleteMapping("/deleteReservation")
+	public boolean deleteReservation(@RequestParam Long reservationId, @RequestParam String source) {
+		return hospitalService.deleteReservation(reservationId, source);
 	}
 	
 // -------------------------- 즐겨찾기 관련--------------------------	

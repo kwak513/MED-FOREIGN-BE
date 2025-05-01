@@ -653,7 +653,10 @@ System.out.println("reviewIds: " + reviewIds);
 	                  "   hr.rate AS rate, " +
 	                  "   hr.original_text AS original_text, " +
 	                  "   hr.created_at AS created_at, " +
-	                  "   gh.gangnam_name AS hospital_name " +
+	                  "   gh.gangnam_name AS hospital_name, " +
+	                  
+	                  "   'gangnam' AS source " +
+	                  
 	                  "FROM " +
 	                  "   member_review mr " +
 	                  "JOIN " +
@@ -673,7 +676,10 @@ System.out.println("reviewIds: " + reviewIds);
 					"   hr.rate AS rate, " +
 					"   hr.original_text AS original_text, " +
 					"   hr.created_at AS created_at, " +
-					"   gh.gangdong_name AS hospital_name " +
+					"   gh.gangdong_name AS hospital_name, " +
+					
+					"   'gangdong' AS source " +
+					
 					"FROM " +
 					"   member_review mr " +
 					"JOIN " +
@@ -702,13 +708,15 @@ System.out.println("reviewIds: " + reviewIds);
 	// 리뷰 수정
 	@Transactional
 	public boolean changeReview(ChangedReviewDto changedReviewDto){
+		String originalLanguage = detectLanguage(changedReviewDto.getOriginalTxt());
 		
 		try {
-	        String sql = "UPDATE hospital_review SET rate = :rate, original_text = :original_text, created_at = NOW() WHERE id = :id";
+	        String sql = "UPDATE hospital_review SET rate = :rate, original_text = :original_text, original_language = :original_language, created_at = NOW() WHERE id = :id";
 	        
 	        Query query = em.createNativeQuery(sql);
 	        query.setParameter("rate", changedReviewDto.getRate());
 	        query.setParameter("original_text", changedReviewDto.getOriginalTxt());
+	        query.setParameter("original_language", originalLanguage);
 	        query.setParameter("id", changedReviewDto.getReviewId());
 	        
 	        int rs = (int) query.executeUpdate();
@@ -729,6 +737,70 @@ System.out.println("reviewIds: " + reviewIds);
 		
 	}
 	
+	// 리뷰 삭제 - hospital_review, gangnam_review/ gangdong_review, member_review 테이블에서 모두 삭제해야함.
+	@Transactional
+	public boolean deleteReview(Long hospitalReviewId, String source){
+		
+		try {
+			
+			// 1. member_review 테이블에서 삭제
+	        String sql1 = "DELETE FROM member_review WHERE hospital_review_id = :hospital_review_id";
+	        
+	        Query query = em.createNativeQuery(sql1);
+	        query.setParameter("hospital_review_id", hospitalReviewId);
+	        int rs = (int) query.executeUpdate();
+	        
+	        int rs2 = 0;
+	        int rs3 = 0;
+	        
+	        // 2. gangnam_review/ gangdong_review 테이블에서 삭제
+	        if("gangnam".equals(source)) {
+	        	String sql2 = "DELETE FROM gangnam_review WHERE hospital_review_id = :hospital_review_id";
+		        
+		        Query query2 = em.createNativeQuery(sql2);
+		        query2.setParameter("hospital_review_id", hospitalReviewId);
+		        rs2 = (int) query2.executeUpdate();
+		        
+		        if(rs2 != 1) {
+		        	throw new IllegalArgumentException("잘못된 source 값입니다: " + source);
+		        }
+	        }
+	        
+	        else if("gangdong".equals(source)){
+	        	String sql3 = "DELETE FROM gangdong_review WHERE hospital_review_id = :hospital_review_id";
+		        
+		        Query query3 = em.createNativeQuery(sql3);
+		        query3.setParameter("hospital_review_id", hospitalReviewId);
+		        rs3 = (int) query3.executeUpdate();
+		        
+		        if(rs3 != 1) {
+		        	throw new IllegalArgumentException("잘못된 source 값입니다: " + source);
+		        }
+	        }
+	        else {
+	        	throw new IllegalArgumentException("잘못된 source 값입니다: " + source);
+	        }
+	        
+	        // 3. hospital_review 테이블에서 삭제
+	        String sql4 = "DELETE FROM hospital_review WHERE id = :hospital_review_id";
+	        
+	        Query query4 = em.createNativeQuery(sql4);
+	        query4.setParameter("hospital_review_id", hospitalReviewId);
+	        int rs5 = (int) query4.executeUpdate();
+	        
+	        if(rs == 1 && (rs2 == 1 || rs3 == 1) && rs5 == 1) {
+	        	System.out.println("deleteReview 성공");
+	        	return true;
+	        }
+	        else {
+	        	throw new IllegalArgumentException("deleteReview 실패 " + source);
+	        }
+	    } catch (Exception e) {
+	    	throw new RuntimeException("deleteReview 실패: " + e.getMessage(), e);
+	    }
+		
+	}
+		
 // -------------------------- 진료예약 관련--------------------------
 	// 진료예약 insert - hospital_reservation, gangnam_reservation/gangnam_reservation 연결 테이블, member_reservation 연결 테이블에 insert
 	@Transactional
@@ -868,6 +940,7 @@ System.out.println("reviewIds: " + reviewIds);
 		
 		try {
 			String sql = "SELECT " +
+					"    hr.id AS hospital_reservation_id, " +
                     "    hr.language AS language, " +
                     "    hr.main_symptom AS main_symptom, " +
                     "    hr.sub_symptom AS sub_symptom, " +
@@ -884,7 +957,13 @@ System.out.println("reviewIds: " + reviewIds);
                     "    CASE " +
                     "        WHEN gr.gangnam_id IS NOT NULL THEN gh.id " +
                     "        WHEN gdr.gangdong_id IS NOT NULL THEN gdh.id " +
-                    "    END AS hospital_id " +
+                    "    END AS hospital_id, " +
+                    
+					"    CASE " +
+					"        WHEN gr.gangnam_id IS NOT NULL THEN gh.gangnam_languages " +
+					"        WHEN gdr.gangdong_id IS NOT NULL THEN gdh.gangdong_languages " +
+					"    END AS hospital_languages " +
+
                     "FROM " +
                     "    member_reservation mr " +
                     "JOIN " +
@@ -944,6 +1023,67 @@ System.out.println("reviewIds: " + reviewIds);
 	    } catch (Exception e) {
 	        System.out.println("changeReservation failed: " + e.getMessage());
 	        return false;
+	    }
+		
+	}
+
+	// 예약한 진료 삭제 - hospital_reservation, gangnam_reservation/ gangdong_reservation, member_reservation 테이블에서 모두 삭제해야함.
+	@Transactional
+	public boolean deleteReservation(Long reservationId, String source){
+		
+		try {
+			
+			// 1. member_reservation 테이블에서 삭제
+	        String sql1 = "DELETE FROM member_reservation WHERE reservation_id = :reservation_id";
+	        
+	        Query query = em.createNativeQuery(sql1);
+	        query.setParameter("reservation_id", reservationId);
+	        int rs = (int) query.executeUpdate();
+	        
+	        int rs2 = 0;
+	        int rs3 = 0;
+	        
+	        // 2. gangnam_reservation/ gangdong_reservation 테이블에서 삭제
+	        if("gangnam".equals(source)) {
+	        	String sql2 = "DELETE FROM gangnam_reservation WHERE reservation_id = :reservation_id";
+		        
+		        Query query2 = em.createNativeQuery(sql2);
+		        query2.setParameter("reservation_id", reservationId);
+		        rs2 = (int) query2.executeUpdate();
+		        
+//		        if(rs2 != 1) {
+//		        	throw new IllegalArgumentException("잘못된 source 값입니다: " + source);
+//		        }
+	        }
+	        
+	        else if("gangdong".equals(source)){
+	        	String sql3 = "DELETE FROM gangdong_reservation WHERE reservation_id = :reservation_id";
+		        
+		        Query query3 = em.createNativeQuery(sql3);
+		        query3.setParameter("reservation_id", reservationId);
+		        rs3 = (int) query3.executeUpdate();
+		        
+	        }
+	        
+	        // 3. hospital_reservation 테이블에서 삭제
+	        String sql4 = "DELETE FROM hospital_reservation WHERE id = :reservation_id";
+	        
+	        Query query4 = em.createNativeQuery(sql4);
+	        query4.setParameter("reservation_id", reservationId);
+	        int rs5 = (int) query4.executeUpdate();
+	        
+	        if(rs == 1 && (rs2 == 1 || rs3 == 1) && rs5 == 1) {
+	        	System.out.println("deleteReservation 성공");
+	        	return true;
+	        }
+	        else {
+	        	throw new IllegalArgumentException("deleteReservation 실패 " + source);
+//	        	return false;
+	        }
+	    } catch (Exception e) {
+	    	throw new RuntimeException("deleteReservation 실패: " + e.getMessage(), e);
+//	        System.out.println("deleteReservation failed: " + e.getMessage());
+//	        return false;
 	    }
 		
 	}
