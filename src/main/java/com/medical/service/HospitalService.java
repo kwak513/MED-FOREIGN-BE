@@ -39,6 +39,9 @@ public class HospitalService {
 	@Autowired
 	PasswordEncoder passwordEncoder;
 	
+	@Autowired // DeepLService 주입
+    private DeeplService deeplService;
+	
 //------------------------ 병원 관련 ------------------------	
 
 	// 메인 리스트 페이지에서 사용할 강남구와 강동구 병원 정보 가져오기(id, 병원명, 시·구 주소, 가능 언어, 대표과 1개)
@@ -169,7 +172,8 @@ public class HospitalService {
 			        + "id AS hospital_id "
 			        + "FROM gangdong_hospital "
 			        + "WHERE (:LANGUAGE IS NULL OR gangdong_languages LIKE CONCAT('%', :LANGUAGE, '%')) "
-			        + "  AND (:DEPARTMENT IS NULL OR FIND_IN_SET(:DEPARTMENT, gangdong_category)) "
+//			        + "  AND (:DEPARTMENT IS NULL OR FIND_IN_SET(:DEPARTMENT, gangdong_category)) "
++ "  AND (:DEPARTMENT IS NULL OR FIND_IN_SET(:DEPARTMENT, REPLACE(gangdong_category, ', ', ','))) "
 			        + "  AND (:LOCATION IS NULL OR gangdong_main_address LIKE CONCAT('%', :LOCATION, '%')) "
 					+ "  AND (:hospital_name IS NULL OR gangdong_name LIKE CONCAT('%', :hospital_name, '%')) "
 			        
@@ -184,19 +188,21 @@ public class HospitalService {
 			        + "'gangnam' AS source, "
 			        + "id AS hospital_id "
 			        + "FROM gangnam_hospital "
-			        + "WHERE (:LANGUAGE IS NULL OR gangnam_languages LIKE CONCAT('%', "
-			        + "    CASE :LANGUAGE "
-			        + "        WHEN '영어' THEN '미국' "
-			        + "        WHEN '일본어' THEN '일본' "
-			        + "        WHEN '중국어' THEN '중국' "
-			        + "        WHEN '러시아어' THEN '러시아' "
-			        + "        WHEN '중동어' THEN '중동' "
-			        + "        WHEN '몽골어' THEN '몽골' "
-			        + "        WHEN '베트남어' THEN '베트남' "
-			        + "        ELSE :LANGUAGE "
-			        + "    END, "
-			        + "    '%')) "
-			        + "  AND (:DEPARTMENT IS NULL OR FIND_IN_SET(:DEPARTMENT, gangnam_category)) "
+			        + "WHERE (:LANGUAGE IS NULL OR gangnam_languages LIKE CONCAT('%', :LANGUAGE, '%')) "
+//			        + "WHERE (:LANGUAGE IS NULL OR gangnam_languages LIKE CONCAT('%', "
+//			        + "    CASE :LANGUAGE "
+//			        + "        WHEN '영어' THEN '미국' "
+//			        + "        WHEN '일본어' THEN '일본' "
+//			        + "        WHEN '중국어' THEN '중국' "
+//			        + "        WHEN '러시아어' THEN '러시아' "
+//			        + "        WHEN '아랍어' THEN '중동' "
+//			        + "        WHEN '몽골어' THEN '몽골' "
+//			        + "        WHEN '베트남어' THEN '베트남' "
+//			        + "        ELSE :LANGUAGE "
+//			        + "    END, "
+//			        + "    '%')) "
+//			        + "  AND (:DEPARTMENT IS NULL OR FIND_IN_SET(:DEPARTMENT, gangnam_category)) "
++ "  AND (:DEPARTMENT IS NULL OR FIND_IN_SET(:DEPARTMENT, REPLACE(gangnam_category, ', ', ','))) "
 			        + "  AND (:LOCATION IS NULL OR gangnam_main_address LIKE CONCAT('%', :LOCATION, '%')) "
 					+ "  AND (:hospital_name IS NULL OR gangnam_name LIKE CONCAT('%', :hospital_name, '%')) "
 			        + "ORDER BY hospital_id ASC "
@@ -232,8 +238,169 @@ public class HospitalService {
 			return new ArrayList<>();
 		}
 	}
+//------------------------ 병원 관련(영어 버전) ------------------------	
+	// *영어* 메인 리스트 페이지에서 사용할 강남구와 강동구 병원 정보 가져오기(id, 병원명, 시·구 주소, 가능 언어, 대표과 1개)
+	public List<Map<String, Object>> select15FromEnHospital(int offsetNum){
+		
+		try {
+			String sql = 
+					
+						"(SELECT en_name AS hospital_name, "
+						+ "en_languages AS hospital_languages, "
+						+ "en_main_address AS hospital_main_address, "
+						+ "SUBSTRING_INDEX(en_category, ',', 1) AS hospital_main_category, "
+						+ "'gangdong' AS source, "
+						+ "id AS hospital_id "
+						+ "FROM en_gangdong_hospital "
+						+ "ORDER BY hospital_id ASC "
+						+ "LIMIT 15 OFFSET :OFFSET) "
+						+ "UNION "
+						+ "(SELECT en_name AS hospital_name, "
+						+ "en_languages AS hospital_languages, "
+						+ "en_main_address AS hospital_main_address, "
+						+ "SUBSTRING_INDEX(en_category, ',', 1) AS hospital_main_category, "
+						+ "'gangnam' AS source, "
+						+ "id AS hospital_id "
+						+ "FROM en_gangnam_hospital "
+						+ "ORDER BY hospital_id ASC "
+						+ "LIMIT 15 OFFSET :OFFSET);"
+						
+					;
+			Query query = em.createNativeQuery(sql, Tuple.class);
+			query.setParameter("OFFSET", offsetNum);
+		
+			List<Tuple> rs = query.getResultList();
+			
+			List<Map<String, Object>> rsToMap = JPAUtil.convertTupleToMap(rs);
+			return rsToMap;
+			
+		} catch(Exception e) {
+			System.out.println("select15FromEnHospital failed: "+ e.getMessage());
+			return new ArrayList<>();
+		}
+	}
+	
+	// *영어* 병원 상세 페이지에서 사용할 '강남구' 병원 정보 가져오기
+	public List<Map<String, Object>> selectFromEnGangnamHospital(int hospitalId){
+		
+		try {
+			String sql = "SELECT en_name AS hospital_name, "
+					+ "hospital_phone_number AS hospital_phone_number, "
+					+ "en_languages AS hospital_languages, "
+					+ "en_main_address AS hospital_main_address, "
+					+ "en_address AS hospital_address, "
+					+ "en_category AS hospital_category "
+					+ "FROM en_gangnam_hospital WHERE id = :ID";;
+			Query query = em.createNativeQuery(sql, Tuple.class);
+			query.setParameter("ID", hospitalId);
+		
+			List<Tuple> rs = query.getResultList();
+			
+			List<Map<String, Object>> rsToMap = JPAUtil.convertTupleToMap(rs);
+			return rsToMap;
+			
+		} catch(Exception e) {
+			System.out.println("selectFromEnGangnamHospital failed: "+ e.getMessage());
+			return new ArrayList<>();
+		}
+	}
+
+	// *영어* 병원 상세 페이지에서 사용할 '강동구' 병원 정보 가져오기
+	public List<Map<String, Object>> selectFromEnGangdongHospital(int hospitalId){
+		
+		try {
+			String sql = "SELECT en_name AS hospital_name, "
+					+ "gangdong_phone_number AS hospital_phone_number, "
+					+ "en_languages AS hospital_languages, "
+					+ "en_main_address AS hospital_main_address, "
+					+ "en_address AS hospital_address, "
+					+ "en_category AS hospital_category "
+					+ "FROM en_gangdong_hospital WHERE id = :ID";
+			
+			
+			Query query = em.createNativeQuery(sql, Tuple.class);
+			query.setParameter("ID", hospitalId);
+		
+			List<Tuple> rs = query.getResultList();
+			
+			List<Map<String, Object>> rsToMap = JPAUtil.convertTupleToMap(rs);
+			return rsToMap;
+			
+		} catch(Exception e) {
+			System.out.println("selectFromEnGangdongHospital failed: "+ e.getMessage());
+			return new ArrayList<>();
+		}
+	}	
+
+	// *영어* 병원 & 필터링 기능(사용 언어, 진료과목, 지역) 동시에.
+	public List<Map<String, Object>> searchAndFilterEnHospital(String hospitalName, String language, String department, String location, int offsetNum){
+		
+		try {
+			String sql = 
+					"(SELECT en_name AS hospital_name, "
+			        + "en_languages AS hospital_languages, "
+			        + "en_main_address AS hospital_main_address, "
+			        + "SUBSTRING_INDEX(en_category, ',', 1) AS hospital_main_category, "
+			        + "'gangdong' AS source, "
+			        + "id AS hospital_id "
+			        + "FROM en_gangdong_hospital "
+			        + "WHERE (:LANGUAGE IS NULL OR en_languages LIKE CONCAT('%', :LANGUAGE, '%')) "
+//			        + "  AND (:DEPARTMENT IS NULL OR FIND_IN_SET(:DEPARTMENT, en_category)) "
++ "  AND (:DEPARTMENT IS NULL OR FIND_IN_SET(:DEPARTMENT, REPLACE(en_category, ', ', ','))) "
+//+ "  AND (:DEPARTMENT IS NULL OR en_category LIKE CONCAT('%', :DEPARTMENT, '%')) "
+			        + "  AND (:LOCATION IS NULL OR en_main_address LIKE CONCAT('%', :LOCATION, '%')) "
+					+ "  AND (:hospital_name IS NULL OR en_name LIKE CONCAT('%', :hospital_name, '%')) "
+			        
+
+			        + "ORDER BY hospital_id ASC "
+			        + "LIMIT 15 OFFSET :OFFSET) "
+			        + "UNION ALL"
+			        + "(SELECT en_name AS hospital_name, "
+			        + "en_languages AS hospital_languages, "
+			        + "en_main_address AS hospital_main_address, "
+			        + "SUBSTRING_INDEX(en_category, ',', 1) AS hospital_main_category, "
+			        + "'gangnam' AS source, "
+			        + "id AS hospital_id "
+			        + "FROM en_gangnam_hospital "
+			        + "WHERE (:LANGUAGE IS NULL OR en_languages LIKE CONCAT('%', :LANGUAGE, '%')) "
+//			        + "  AND (:DEPARTMENT IS NULL OR FIND_IN_SET(:DEPARTMENT, en_category)) "
++ "  AND (:DEPARTMENT IS NULL OR FIND_IN_SET(:DEPARTMENT, REPLACE(en_category, ', ', ','))) "
+//+ "  AND (:DEPARTMENT IS NULL OR en_category LIKE CONCAT('%', :DEPARTMENT, '%')) "
+			        + "  AND (:LOCATION IS NULL OR en_main_address LIKE CONCAT('%', :LOCATION, '%')) "
+					+ "  AND (:hospital_name IS NULL OR en_name LIKE CONCAT('%', :hospital_name, '%')) "
+			        + "ORDER BY hospital_id ASC "
+			        + "LIMIT 15 OFFSET :OFFSET);";
+
+	        Query query = em.createNativeQuery(sql, Tuple.class);
+//		        query.setParameter("hospital_name", hospitalName);
+//		        query.setParameter("LANGUAGE", language.trim());
+//				query.setParameter("DEPARTMENT", department.trim());
+//				query.setParameter("LOCATION", location.trim());
+//		        query.setParameter("OFFSET", offsetNum);
+	        
+	        String hospitalNameParam = (hospitalName == null || hospitalName.trim().isEmpty()) ? null : hospitalName.trim();
+	        String languageParam = (language == null || language.trim().isEmpty()) ? null : language.trim();
+	        String departmentParam = (department == null || department.trim().isEmpty() || "전체".equals(department.trim())) ? null : department.trim();
+	        String locationParam = (location == null || location.trim().isEmpty()) ? null : location.trim();
+
+	        query.setParameter("hospital_name", hospitalNameParam);
+	        query.setParameter("LANGUAGE", languageParam);
+	        query.setParameter("DEPARTMENT", departmentParam);
+	        query.setParameter("LOCATION", locationParam);
+	        query.setParameter("OFFSET", offsetNum);
+//		        
 
 		
+			List<Tuple> rs = query.getResultList();
+			
+			List<Map<String, Object>> rsToMap = JPAUtil.convertTupleToMap(rs);
+			return rsToMap;
+			
+		} catch(Exception e) {
+			System.out.println("searchAndFilterEnHospital failed: "+ e.getMessage());
+			return new ArrayList<>();
+		}
+	}
 //------------------------ 회원 관련 ------------------------	
 	
 	// 회원가입	
@@ -606,6 +773,7 @@ System.out.println("rate: " + hospitalReviewDto.getRate() + "original_language: 
 	}
 
 	// 병원 id 통해서, hospital_review select 해오기
+	/*
 	public List<Map<String, Object>> selectFromHospitalReview(Long hospitalId, String source){
 		
 		try {
@@ -641,6 +809,80 @@ System.out.println("reviewIds: " + reviewIds);
 			return new ArrayList<>();
 		}
 	}
+	*/
+	
+	
+	// *리뷰 번역 기능 포함* 병원 id 통해서, hospital_review select 해오기
+	public List<Map<String, Object>> selectFromHospitalReview(Long hospitalId, String source, String targetLanguage){ // targetLanguage 파라미터 추가
+
+		try {
+			String sqlForReviewIds = "";
+
+			// 1. 병원 소스(gangnam/gangdong)에 따라 해당 병원의 리뷰 ID 목록 조회
+			if(source.equals("gangnam")) {
+				sqlForReviewIds = "SELECT hospital_review_id FROM gangnam_review WHERE gangnam_id = :hospital_id";
+			} else if(source.equals("gangdong")) {
+				sqlForReviewIds = "SELECT hospital_review_id FROM gangdong_review WHERE gangdong_id = :hospital_id";
+			} else {
+				// 유효하지 않은 source면 빈 리스트 반환
+				System.err.println("Invalid hospital source: " + source);
+				return new ArrayList<>();
+			}
+
+			Query reviewIdQuery = em.createNativeQuery(sqlForReviewIds);
+			reviewIdQuery.setParameter("hospital_id", hospitalId);
+
+			@SuppressWarnings("unchecked") // getResultList() 경고 무시
+			List<Integer> reviewIds = reviewIdQuery.getResultList();
+			System.out.println("reviewIds: " + reviewIds);
+
+			// 해당하는 리뷰 ID가 없으면 빈 리스트 반환
+			if(reviewIds.isEmpty()) {
+				return new ArrayList<>();
+			}
+
+			// 2. 조회된 review ID 목록으로 HOSPITAL_REVIEW 테이블에서 상세 정보 조회
+			String sqlForReviews = "SELECT * FROM HOSPITAL_REVIEW WHERE id IN (:reviewIds)";
+			Query reviewQuery = em.createNativeQuery(sqlForReviews, Tuple.class);
+			reviewQuery.setParameter("reviewIds", reviewIds);
+
+			List<Tuple> reviews = reviewQuery.getResultList();
+			// Tuple 결과를 Map 리스트로 변환 (JPAUtil은 직접 구현하신 유틸리티 클래스 가정)
+			List<Map<String, Object>> reviewMaps = JPAUtil.convertTupleToMap(reviews);
+
+			// 3. 각 리뷰에 대해 번역 처리
+			for (Map<String, Object> reviewMap : reviewMaps) {
+                String originalText = (String) reviewMap.get("original_text");
+                String originalLanguage = (String) reviewMap.get("original_language");
+                String translatedText = originalText; // 기본값은 원본 텍스트
+
+                // 원본 텍스트가 있고, 원본 언어와 목표 언어가 다를 경우 번역 시도
+                if (originalText != null && !originalText.isEmpty() && originalLanguage != null && !targetLanguage.equalsIgnoreCase(originalLanguage)) {
+                    try {
+                    	// DeepLService의 translate 메소드 호출
+                        String sourceLangCode = originalLanguage.toUpperCase(); // DeepL은 대문자 코드 사용
+                        String targetLangCode = targetLanguage.equalsIgnoreCase("en") ? "EN-US" : targetLanguage.toUpperCase(); // DeepL 형식에 맞게 조정
+                        translatedText = deeplService.translate(originalText, sourceLangCode, targetLangCode);
+                    } catch (Exception e) { // 번역 중 예외 발생 시 처리
+                        System.err.println("DeepL 번역 실패 for review ID " + reviewMap.get("id") + ": " + e.getMessage());
+                        // 번역 실패 시 translatedText는 originalText로 유지됨
+                    }
+                }
+				// 번역된 (또는 원본) 텍스트를 결과 맵에 추가
+				reviewMap.put("translated_text", translatedText);
+			}
+
+			// 4. 번역된 텍스트가 포함된 최종 결과 반환
+			return reviewMaps;
+
+		} catch(Exception e) { // DB 조회 등 전체 과정에서 예외 발생 시 처리
+			System.err.println("selectFromHospitalReview failed: "+ e.getMessage());
+			// 예외 발생 시 빈 리스트 반환
+			return new ArrayList<>();
+		}
+	}
+	
+	
 	
 	// 회원이 작성한 리뷰 조회
 	public List<Map<String, Object>> selectReviewByMemberId(Long memberId){
@@ -654,6 +896,7 @@ System.out.println("reviewIds: " + reviewIds);
 	                  "   hr.original_text AS original_text, " +
 	                  "   hr.created_at AS created_at, " +
 	                  "   gh.gangnam_name AS hospital_name, " +
+	                  "   gh.id AS hospital_id, " +
 	                  
 	                  "   'gangnam' AS source " +
 	                  
@@ -677,6 +920,7 @@ System.out.println("reviewIds: " + reviewIds);
 					"   hr.original_text AS original_text, " +
 					"   hr.created_at AS created_at, " +
 					"   gh.gangdong_name AS hospital_name, " +
+					"   gh.id AS hospital_id, " +
 					
 					"   'gangdong' AS source " +
 					
@@ -700,6 +944,71 @@ System.out.println("reviewIds: " + reviewIds);
 
 	    } catch (Exception e) {
 	        System.out.println("selectReviewByMemberId failed: " + e.getMessage());
+	        return new ArrayList<>();
+	    }
+		
+	}
+		
+	// *영어* 회원이 작성한 리뷰 조회
+	public List<Map<String, Object>> selectReviewByMemberIdEn(Long memberId){
+		
+		try {
+	        String sql = "";
+
+	        sql = 	"(SELECT " +
+	        		  "hr.id AS review_id, " + 
+	                  "   hr.rate AS rate, " +
+	                  "   hr.original_text AS original_text, " +
+	                  "   hr.created_at AS created_at, " +
+	                  "   gh.en_name AS hospital_name, " +
+	                  "   gh.id AS hospital_id, " +
+	                  
+	                  "   'gangnam' AS source " +
+	                  
+	                  "FROM " +
+	                  "   member_review mr " +
+	                  "JOIN " +
+	                  "   hospital_review hr ON mr.hospital_review_id = hr.id " +
+	                  "  JOIN " +
+	                  "   gangnam_review gr ON hr.id = gr.hospital_review_id " +
+	                  " JOIN " +
+	                  "   en_gangnam_hospital gh ON gr.gangnam_id = gh.id " +
+	                  "WHERE " +
+	                  "   mr.member_id = :memberId)" +
+	                  
+	                  " UNION " +
+	                  
+							        
+					"(SELECT " +
+					"hr.id AS review_id, " + 
+					"   hr.rate AS rate, " +
+					"   hr.original_text AS original_text, " +
+					"   hr.created_at AS created_at, " +
+					"   gh.en_name AS hospital_name, " +
+					"   gh.id AS hospital_id, " +
+					
+					"   'gangdong' AS source " +
+					
+					"FROM " +
+					"   member_review mr " +
+					"JOIN " +
+					"   hospital_review hr ON mr.hospital_review_id = hr.id " +
+					" JOIN " +
+					"   gangdong_review gr ON hr.id = gr.hospital_review_id " +
+					" JOIN " +
+					"   en_gangdong_hospital gh ON gr.gangdong_id = gh.id " +
+					"WHERE " +
+					"   mr.member_id = :memberId)";
+
+	        Query query = em.createNativeQuery(sql, Tuple.class);
+	        query.setParameter("memberId", memberId);
+
+	        List<Tuple> rs = query.getResultList();
+
+	        return JPAUtil.convertTupleToMap(rs);
+
+	    } catch (Exception e) {
+	        System.out.println("selectReviewByMemberIdEn failed: " + e.getMessage());
 	        return new ArrayList<>();
 	    }
 		
@@ -1087,6 +1396,68 @@ System.out.println("reviewIds: " + reviewIds);
 	    }
 		
 	}
+
+	
+	// *영어* 회원의 진료 조회 - member id 통해서, hospital_reservation select 해오기(language, main_symptom, sub_symptom, detail_symptom, gangnam_name/ gangdong_name)
+	public List<Map<String, Object>> selectFromHospitalReservationEn(Long memberId){
+		
+		try {
+			String sql = "SELECT " +
+					"    hr.id AS hospital_reservation_id, " +
+                    "    hr.language AS language, " +
+                    "    hr.main_symptom AS main_symptom, " +
+                    "    hr.sub_symptom AS sub_symptom, " +
+                    "    hr.detail_symptom AS detail_symptom, " +
+                    "    hr.reservation_time AS reservation_time, " +
+                    "    CASE " +
+                    "        WHEN gr.gangnam_id IS NOT NULL THEN gh.en_name " +
+                    "        WHEN gdr.gangdong_id IS NOT NULL THEN gdh.en_name " +
+                    "    END AS hospital_name, " +
+                    "    CASE " +
+                    "        WHEN gr.gangnam_id IS NOT NULL THEN 'gangnam' " +
+                    "        WHEN gdr.gangdong_id IS NOT NULL THEN 'gangdong' " +
+                    "    END AS source, " +
+                    "    CASE " +
+                    "        WHEN gr.gangnam_id IS NOT NULL THEN gh.id " +
+                    "        WHEN gdr.gangdong_id IS NOT NULL THEN gdh.id " +
+                    "    END AS hospital_id, " +
+                    
+					"    CASE " +
+					"        WHEN gr.gangnam_id IS NOT NULL THEN gh.en_languages " +
+					"        WHEN gdr.gangdong_id IS NOT NULL THEN gdh.en_languages " +
+					"    END AS hospital_languages " +
+
+                    "FROM " +
+                    "    member_reservation mr " +
+                    "JOIN " +
+                    "    hospital_reservation hr ON mr.reservation_id = hr.id " +
+                    "LEFT JOIN " +
+                    "    gangnam_reservation gr ON hr.id = gr.reservation_id " +
+                    "LEFT JOIN " +
+                    "    en_gangnam_hospital gh ON gr.gangnam_id = gh.id " +
+                    "LEFT JOIN " +
+                    "    gangdong_reservation gdr ON hr.id = gdr.reservation_id " +
+                    "LEFT JOIN " +
+                    "    en_gangdong_hospital gdh ON gdr.gangdong_id = gdh.id " +
+                    "WHERE " +
+                    "    mr.member_id = :memberId";
+
+	        
+
+	        Query query = em.createNativeQuery(sql, Tuple.class);
+	        query.setParameter("memberId", memberId);
+
+	        List<Tuple> rs = query.getResultList();
+	        return JPAUtil.convertTupleToMap(rs);
+
+	    } catch (Exception e) {
+	        System.out.println("selectFromHospitalReservationEn failed: " + e.getMessage());
+	        return new ArrayList<>();
+	    }
+		
+	}
+	
+	
 // -------------------------- 즐겨찾기 관련--------------------------
 	// 즐겨찾기 추가 - member_favorite 테이블에 insert
 	@Transactional
@@ -1159,6 +1530,48 @@ System.out.println("reviewIds: " + reviewIds);
 	    }
 		
 	}
+
+	// *영어*  회원의 즐겨찾기 조회(병원 id, 병원명, 병원 메인 주소)
+	public List<Map<String, Object>> selectFromMemberFavoriteEn(Long memberId){
+		
+		try {
+			String sql = "SELECT " +
+					 "mf.hospital_source as hospital_source, " +
+		             "   CASE " +
+		             "       WHEN mf.hospital_source = 'gangnam' THEN gh.id " +
+		             "       WHEN mf.hospital_source = 'gangdong' THEN gdh.id " +
+		             "   END AS hospital_id, " +
+		             "   CASE " +
+		             "       WHEN mf.hospital_source = 'gangnam' THEN gh.en_name " +
+		             "       WHEN mf.hospital_source = 'gangdong' THEN gdh.en_name " +
+		             "   END AS hospital_name, " +
+		             "   CASE " +
+		             "       WHEN mf.hospital_source = 'gangnam' THEN gh.en_main_address " +
+		             "       WHEN mf.hospital_source = 'gangdong' THEN gdh.en_main_address " +
+		             "   END AS hospital_main_address " +
+		             "FROM " +
+		             "   member_favorite mf " +
+		             "LEFT JOIN " +
+		             "   en_gangnam_hospital gh ON mf.hospital_source = 'gangnam' AND mf.hospital_id = gh.id " +
+		             "LEFT JOIN " +
+		             "   en_gangdong_hospital gdh ON mf.hospital_source = 'gangdong' AND mf.hospital_id = gdh.id " +
+		             "WHERE " +
+		             "   mf.member_id = :memberId";
+
+	        Query query = em.createNativeQuery(sql, Tuple.class);
+	        query.setParameter("memberId", memberId);
+
+	        List<Tuple> rs = query.getResultList();
+
+	        return JPAUtil.convertTupleToMap(rs);
+
+	    } catch (Exception e) {
+	        System.out.println("selectFromMemberFavoriteEn failed: " + e.getMessage());
+	        return new ArrayList<>();
+	    }
+		
+	}
+		
 	
 	// 병원 id와 회원 id로, 회원이 즐겨찾기한 병원인지 확인 
 	public boolean isFavoriteCheck(Long memberId, Long hospitalId, String source){

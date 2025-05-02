@@ -95,24 +95,36 @@ System.out.println("offsetNum: " + offsetNum);
 	  }
 	]
 	 */
-	
-//	// 병원명 검색하기
-//	@GetMapping("/selectByHospitalName")
-//	public List<Map<String, Object>> selectByHospitalName(@RequestParam String hospitalName, @RequestParam int offsetNum){
-//		return hospitalService.selectByHospitalName(hospitalName, offsetNum);
-//	}
-//	
-//	// 필터링 기능(사용 언어, 진료과목, 지역)
-//	@GetMapping("/filterHospitalByLangDepartLocation")
-//	public List<Map<String, Object>> filterHospitalByLangDepartLocation(@RequestParam(required = false) String language, @RequestParam(required = false) String department, @RequestParam(required = false) String location, @RequestParam int offsetNum){
-//System.out.println("language: " + language + "department: " + department + "location: " + location + "offsetNum: " + offsetNum);		
-//		return hospitalService.filterHospitalByLangDepartLocation(language, department, location, offsetNum);
-//	}
-	
+
 	// 병원 & 필터링 기능(사용 언어, 진료과목, 지역) 동시에.
 	@GetMapping("/searchAndFilterHospital")
 	public List<Map<String, Object>> searchAndFilterHospital(@RequestParam(required = false) String hospitalName, @RequestParam(required = false) String language, @RequestParam(required = false) String department, @RequestParam(required = false)String location, int offsetNum){
 		return hospitalService.searchAndFilterHospital(hospitalName, language, department, location, offsetNum);
+	}
+	
+//------------------------ 병원 관련(영어 버전) ------------------------	
+	// *영어* 메인 리스트 페이지에서 사용할 강남구와 강동구 병원 정보 가져오기(id, 병원명, 시·구 주소, 가능 언어, 대표과 1개)
+	@GetMapping("/select15FromEnHospital")
+	public List<Map<String, Object>> select15FromEnHospital(int offsetNum){
+		return hospitalService.select15FromEnHospital(offsetNum);
+	}
+	
+	// *영어* 병원 상세 페이지에서 사용할 '강남구' 병원 정보 가져오기
+	@GetMapping("/selectFromEnGangnamHospital")
+	public List<Map<String, Object>> selectFromEnGangnamHospital(int hospitalId){
+		return hospitalService.selectFromEnGangnamHospital(hospitalId);
+	}
+		
+	// *영어* 병원 상세 페이지에서 사용할 '강동구' 병원 정보 가져오기
+	@GetMapping("/selectFromEnGangdongHospital")
+	public List<Map<String, Object>> selectFromEnGangdongHospital(int hospitalId){
+		return hospitalService.selectFromEnGangdongHospital(hospitalId);
+	}
+	
+	// *영어* 병원 & 필터링 기능(사용 언어, 진료과목, 지역) 동시에.
+	@GetMapping("/searchAndFilterEnHospital")
+	public List<Map<String, Object>> searchAndFilterEnHospital(String hospitalName, String language, String department, String location, int offsetNum){
+		return hospitalService.searchAndFilterEnHospital(hospitalName, language, department, location, offsetNum);
 	}
 // -------------------------- 회원  --------------------------
 	// 회원가입
@@ -161,14 +173,20 @@ System.out.println("offsetNum: " + offsetNum);
 	
 	// 병원 id 통해서, hospital_review select 해오기
 	@GetMapping("/selectFromHospitalReview")
-	public List<Map<String, Object>> selectFromHospitalReview(@RequestParam Long hospitalId, @RequestParam String source){
-		return hospitalService.selectFromHospitalReview(hospitalId, source);
+	public List<Map<String, Object>> selectFromHospitalReview(@RequestParam Long hospitalId, @RequestParam String source, @RequestParam String targetLanguage){
+		return hospitalService.selectFromHospitalReview(hospitalId, source, targetLanguage);
 	}
 	
 	// 회원이 작성한 리뷰 조회
 	@GetMapping("/selectReviewByMemberId")
 	public List<Map<String, Object>> selectReviewByMemberId(@RequestParam Long memberId){
 		return hospitalService.selectReviewByMemberId(memberId);
+	}
+	
+	// *영어* 회원이 작성한 리뷰 조회
+	@GetMapping("/selectReviewByMemberIdEn")
+	public List<Map<String, Object>> selectReviewByMemberIdEn(@RequestParam Long memberId){
+		return hospitalService.selectReviewByMemberIdEn(memberId);
 	}
 	/*
 	[
@@ -185,6 +203,7 @@ System.out.println("offsetNum: " + offsetNum);
 	    "hospital_name": "누브의원"
 	  }, {}, {} ,...
 	*/	
+	
 	
 	// 리뷰 수정
 	@PutMapping("/changeReview")
@@ -235,6 +254,13 @@ System.out.println("offsetNum: " + offsetNum);
 		return hospitalService.deleteReservation(reservationId, source);
 	}
 	
+	
+	// *영어* 회원의 진료 조회 - member id 통해서, hospital_reservation select 해오기(language, main_symptom, sub_symptom, detail_symptom, gangnam_name/ gangdong_name)
+	@GetMapping("/selectFromHospitalReservationEn")
+	public List<Map<String, Object>> selectFromHospitalReservationEn(@RequestParam Long memberId){
+		return hospitalService.selectFromHospitalReservationEn(memberId);
+	}
+	
 // -------------------------- 즐겨찾기 관련--------------------------	
 	// 즐겨찾기 추가 - member_favorite 테이블에 insert
 	@PostMapping("/insertIntoMemberFavorite")
@@ -256,6 +282,12 @@ System.out.println("offsetNum: " + offsetNum);
 	  }, {}, {}, ...
 	] 
 	*/
+	
+	// *영어*  회원의 즐겨찾기 조회(병원 id, 병원명, 병원 메인 주소)
+	@GetMapping("/selectFromMemberFavoriteEn")
+	public List<Map<String, Object>> selectFromMemberFavoriteEn(Long memberId){
+		return hospitalService.selectFromMemberFavoriteEn(memberId);
+	}
 	// 병원 id와 회원 id로, 회원이 즐겨찾기한 병원인지 확인 
 	@GetMapping("/isFavoriteCheck")
 	public boolean isFavoriteCheck(@RequestParam Long memberId, @RequestParam Long hospitalId, @RequestParam String source) {
