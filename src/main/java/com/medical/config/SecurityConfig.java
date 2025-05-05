@@ -29,11 +29,15 @@ public class SecurityConfig {
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
             .authorizeRequests()
-            .requestMatchers("/memberRegister", "/memberLogin", "/selectUserInfo", "/selectUserName", "/isUserExist", "/changeUserInfo").permitAll()
-            .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-            .requestMatchers("/select15FromGangnamGangDongHospital", "/selectFromGangnamHospital", "/selectFromGangdongHospital", "searchAndFilterHospital").permitAll() 
-            .requestMatchers("/insertHospitalReview", "/selectFromHospitalReview", "/changeReview", "/deleteReview", "/insertHospitalReservation", "/selectFromHospitalReservation", "/changeReservation", "/deleteReservation" ,"/selectReviewByMemberId", "/insertIntoMemberFavorite", "/selectFromMemberFavorite", "/isFavoriteCheck", "/deleteMemberFavorite").permitAll()
-            .requestMatchers("/select15FromEnHospital", "/selectFromEnGangnamHospital", "/selectFromEnGangdongHospital", "/searchAndFilterEnHospital", "/selectFromMemberFavoriteEn", "/selectFromHospitalReservationEn", "/selectReviewByMemberIdEn").permitAll()
+            
+//            .requestMatchers("/memberRegister", "/memberLogin", "/selectUserInfo", "/selectUserName", "/isUserExist", "/changeUserInfo").permitAll()
+//            .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+//            .requestMatchers("/select15FromGangnamGangDongHospital", "/selectFromGangnamHospital", "/selectFromGangdongHospital", "searchAndFilterHospital").permitAll() 
+//            .requestMatchers("/insertHospitalReview", "/selectFromHospitalReview", "/changeReview", "/deleteReview", "/insertHospitalReservation", "/selectFromHospitalReservation", "/changeReservation", "/deleteReservation" ,"/selectReviewByMemberId", "/insertIntoMemberFavorite", "/selectFromMemberFavorite", "/isFavoriteCheck", "/deleteMemberFavorite").permitAll()
+//            .requestMatchers("/select15FromEnHospital", "/selectFromEnGangnamHospital", "/selectFromEnGangdongHospital", "/searchAndFilterEnHospital", "/selectFromMemberFavoriteEn", "/selectFromHospitalReservationEn", "/selectReviewByMemberIdEn").permitAll()
+            
+            .requestMatchers("/**").permitAll()
+
             .anyRequest().authenticated();
 
         // JWT 필터 등록
