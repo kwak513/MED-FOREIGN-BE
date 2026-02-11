@@ -31,6 +31,7 @@
 <img width="1713" height="1562" alt="image" src="https://github.com/user-attachments/assets/bd4a6188-7543-47dd-90b9-28d470aa851d" />
 
 - 사용자가 선택한 언어 설정에 따라 쿼리 대상 테이블을 동적으로 전환합니다.
+  
 | 선택 언어 | 테이블 |
 | :--- | :--- |
 | **Korean (Default)** | `gangnam_hospital`, `gangdong_hospital` |
