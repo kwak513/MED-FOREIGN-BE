@@ -2,6 +2,7 @@
 
 ## 📢 서비스 한줄 소개  
 **Doctor K** — 진료 가능 언어, 진료과목, 지역 필터링이 가능한 다국어 병원 정보 웹사이트
+<img width="1919" height="905" alt="image" src="https://github.com/user-attachments/assets/49a397af-ef18-456b-8382-f34ac1b4d256" />
 
 
 ## 📝 서비스 소개  
@@ -25,6 +26,15 @@
 - **Build Tool**: Maven
 - **Documentation**: Swagger  
 
+## 📊 데이터베이스 설계 (ERD)
+
+<img width="1713" height="1562" alt="image" src="https://github.com/user-attachments/assets/bd4a6188-7543-47dd-90b9-28d470aa851d" />
+
+- 사용자가 선택한 언어 설정에 따라 쿼리 대상 테이블을 동적으로 전환합니다.
+| 선택 언어 | 테이블 |
+| :--- | :--- |
+| **Korean (Default)** | `gangnam_hospital`, `gangdong_hospital` |
+| **English** | `en_gangnam_hospital`, `en_gangdong_hospital` |
 
 
 ## 📁 주요 파일 구조
